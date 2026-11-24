@@ -1,0 +1,409 @@
+{
+  "name": "Multi-step content repurposing pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Based on the data given, give the required LinkedIn post,\ntranscription title : {{ $json[\"Transcript/Blog Title\"] }}\ntranscription body : {{ $json[\"Transcript/Blog Body\"] }}",
+        "options": {
+          "systemMessage": "I run a YouTube channel called PaisaVaisa (personal finance, ~40K subs) and post one long video every week — usually 15-20 mins, transcript runs 2500-3500 words. Problem is I only ever use it on YouTube. I know I'm leaving stuff on the table for LinkedIn (which I've been terrible about sending).\n\nWhat I want: something where I paste in the video transcript and it generates a LinkedIn post. I've seen AI slop and I don't want my brand to sound like a bot.\n\nAlso — some of my videos are quick 3-4 min Q&A ones with barely any content. Don't want the system trying to force posts out of something that's basically not enough of a substance. It should just tell me \"not enough here\" instead of giving me garbage.\n---\nSingle post, not a thread. Longer form is fine — 150 to 250 words. Start with a one-liner hook (no \"Excited to share…\" nonsense). Tell a small story or give a contrarian take, then the key insight, then a question at the end to get comments. No bullet point walls."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        144,
+        -32
+      ],
+      "id": "f35dad3d-de86-401a-a13f-878af89b400a",
+      "name": "LinkedIn Post"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Based on the given data, give the required twitter threads as output,\ntranscription title : {{ $json[\"Transcript/Blog Title\"] }}\ntranscription body : {{ $json[\"Transcript/Blog Body\"] }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "I run a YouTube channel called PaisaVaisa (personal finance, ~40K subs) and post one long video every week — usually 15-20 mins, transcript runs 2500-3500 words. Problem is I only ever use it on YouTube. I know I'm leaving stuff on the table for Twitter, LinkedIn, and my newsletter (which I've been terrible about sending).\n\nWhat I want: something where I paste in the video transcript and it spits out a Twitter thread. I've seen AI slop and I don't want my brand to sound like a bot.\n\nAlso — some of my videos are quick 3-4 min Q&A ones with barely any content. Don't want the system trying to force posts out of something that's basically not enough of a substance. It should just tell me \"not enough here\" instead of giving me garbage.\n---\nI want it punchy. Hook tweet should be a bold claim or a number — something that stops the scroll. Each tweet should be one idea, max 2 sentences. No filler tweets like \"here's what I learned 🧵.\" Ideally 6-10 tweets. End with a CTA to the YouTube video. My audience is 22-32 year olds, semi-finance-literate, casual tone — think \"smart friend explaining money\" not \"LinkedIn finance bro.\"\nDon't send any verbose text, just the twitter thread ready to be copied and pasted without trimming anything from the response.\nGive the threads as a unique and different JSON schema for output."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        -368
+      ],
+      "id": "e474292d-b771-41c9-b887-d494af0eae05",
+      "name": "Twitter Thread"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Based on this input, give off the Email Newsletter Subject and Body,\ntranscript title : {{ $json[\"Transcript/Blog Title\"] }}\ntranscript text : {{ $json[\"Transcript/Blog Body\"] }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "I run a YouTube channel called PaisaVaisa (personal finance, ~40K subs) and post one long video every week — usually 15-20 mins, transcript runs 2500-3500 words. Problem is I only ever use it on YouTube. I know I'm leaving stuff on the table for my newsletter (which I've been terrible about sending).\n\nWhat I want: something where I paste in the video transcript and it generates a newsletter draft. I've seen AI slop and I don't want my brand to sound like a bot.\n\nAlso — some of my videos are quick 3-4 min Q&A ones with barely any content. Don't want the system trying to force posts out of something that's basically not enough of a substance. It should just tell me \"not enough here\" instead of giving me garbage.\n---\nThis is for people who actually subscribed and want depth. 300-400 words. Proper intro, the core breakdown from the video (can use bullet points here unlike LinkedIn), and a \"this week's takeaway\" section at the end. Subject line suggestion would also be nice if possible. Friendly but slightly more structured — these people opted in, they want the full thing.\n\nOverall tone across all three: no jargon, no cringe emojis every sentence, no generic AI-sounding phrases like \"In today's fast-paced world…\"\n---\nOutput Format (JSON schemas):\n\"subject\" : {\"subject of the newsletter email\"}\n\"body\" : {\"body of the newsletter\"}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        144,
+        256
+      ],
+      "id": "136220fe-77a4-4d9a-be33-d6e129de5f0f",
+      "name": "Email Newsletter"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        192,
+        -176
+      ],
+      "id": "880e6418-2b6f-44bf-9e27-18c6d71f2058",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tLbgRuzCmUlFV1Sg",
+          "name": "CometAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"tweets\": [\n    \"tweet 1\",\n    \"tweet 2\",\n    \"tweet 3\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        -128
+      ],
+      "id": "a5e02b95-268c-4395-bbe4-358c6a3a78b8",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        128
+      ],
+      "id": "4a73188b-e7c5-4b4d-a2c4-7809dcc41e1f",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "tLbgRuzCmUlFV1Sg",
+          "name": "CometAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        432
+      ],
+      "id": "55b0a5c8-915d-4232-baa1-65f30fb60ffb",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "tLbgRuzCmUlFV1Sg",
+          "name": "CometAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"subject\" : \" \",\n    \"body\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        464
+      ],
+      "id": "41a1fe59-08ac-4100-b1a9-5b37fa9d5cd0",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "formTitle": "Multi-media Posting Agent",
+        "formDescription": "Enter the transcript/blog and it'll generate a twitter thread, a LinkedIn post and an email newsletter for you...",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Transcript/Blog Title"
+            },
+            {
+              "fieldLabel": "Transcript/Blog Body",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -496,
+        0
+      ],
+      "id": "b2c63036-92fc-49db-8170-ade93910886c",
+      "name": "Entering the Transcription/Blog",
+      "webhookId": "64fadb54-934e-4b20-a449-0ca99b3db7ec"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BLWFULJDU",
+          "mode": "list",
+          "cachedResultName": "multi-step-content-repurposing-pipeline"
+        },
+        "text": "=Here are the Twitter Threads :-\n{{ $json.output.tweets }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        560,
+        -368
+      ],
+      "id": "a410fe5b-4ee4-4b9c-bcc1-a29ed06e47e5",
+      "name": "Reviewing before uploading",
+      "webhookId": "95fdf9fd-fe5b-4d89-bcb6-0e2fec33635d",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "aQ1l9BZVMlEvrkEt",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BLWFULJDU",
+          "mode": "list",
+          "cachedResultName": "multi-step-content-repurposing-pipeline"
+        },
+        "text": "=LinkedIn post:-\n{{ $json.output }}\n",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        608,
+        -32
+      ],
+      "id": "176b70d9-7b29-40b1-9bea-846fbc7dc9a0",
+      "name": "Reviewing before uploading1",
+      "webhookId": "95fdf9fd-fe5b-4d89-bcb6-0e2fec33635d",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "aQ1l9BZVMlEvrkEt",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BLWFULJDU",
+          "mode": "list",
+          "cachedResultName": "multi-step-content-repurposing-pipeline"
+        },
+        "text": "=Email Newsletter :-\n\nSubject : {{ $json.output.subject }}\nBody : {{ $json.output.body }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        576,
+        256
+      ],
+      "id": "fd7f2cee-78c3-4682-b2fd-9ecb5ef2a4af",
+      "name": "Reviewing before uploading2",
+      "webhookId": "95fdf9fd-fe5b-4d89-bcb6-0e2fec33635d",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "aQ1l9BZVMlEvrkEt",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Twitter Thread": {
+      "main": [
+        [
+          {
+            "node": "Reviewing before uploading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Twitter Thread",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Twitter Thread",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LinkedIn Post",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email Newsletter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Email Newsletter",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Reviewing before uploading2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Post": {
+      "main": [
+        [
+          {
+            "node": "Reviewing before uploading1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entering the Transcription/Blog": {
+      "main": [
+        [
+          {
+            "node": "Twitter Thread",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "LinkedIn Post",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "100752cf-f9ec-4d2c-9745-0f16c6f7cc67",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4f8ad9799b19b614ef95ff228fb04f734ceae1b1007d41d1d8d2829380a2690a"
+  },
+  "nodeGroups": [],
+  "id": "GiKXFqYlKoCrwhzH",
+  "tags": []
+}

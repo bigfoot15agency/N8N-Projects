@@ -1,0 +1,575 @@
+{
+  "name": "AI-powered Outbound Cold Email Personalization at Scale (Sequencer and Reply)",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a follow up based on the given data,\ncold_email_body : {{ $json.threads[0].snippet }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=I'm one of the founders at Verve Outbound. We're a 2-person B2B SaaS team and we've been doing cold outreach manually, but it doesn't scale and generic \"I saw your profile\" openers get zero replies.\n\nYou will be provided with the cold email we sent to each prospect after scrapping their company site, we pulls one real detail worth mentioning, and writes a short opening line referencing it — then queues it into our email sequencer without blasting everything at once and getting us flagged as spam.\n\nIf a prospect's site gives nothing usable,we just skip them and stores the reason of why.\n\nWhat we Want : Generate follow-up emails to send again to the prospect if he/she haven't replied yet.\n\n\nOutput Fromat:-\n{\"email_body\"} : {\"body of the email\"}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        496,
+        80
+      ],
+      "id": "64efa532-dc07-4e53-be64-416c0713d10d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"email_body\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        256
+      ],
+      "id": "944a3621-882e-4e95-a759-c0ed90c704a6",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        272
+      ],
+      "id": "cc5a706a-941a-4749-9568-c995b3ace21c",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tLbgRuzCmUlFV1Sg",
+          "name": "CometAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 18
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        0
+      ],
+      "id": "248abfe2-080c-4421-912c-d2bcd318483f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "get",
+        "threadId": "={{ $json.threadID }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        0
+      ],
+      "id": "f551b08a-aa2d-4728-b068-ba288cbe8809",
+      "name": "Get a thread",
+      "webhookId": "091852f8-ca19-468c-8b12-027be0b9bc66",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Sl7WS78wSA6sGgW9",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "reply",
+        "threadId": "={{ $('Get row(s) from sheet').item.json.threadID }}",
+        "message": "={{ $json.output.email_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        80
+      ],
+      "id": "9585453d-3c0d-4468-bdee-0f487a72ccfb",
+      "name": "Sending a Follow-Up Email",
+      "webhookId": "54ed53c7-91f3-44f6-898d-2de6235324de",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Sl7WS78wSA6sGgW9",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U",
+          "mode": "list",
+          "cachedResultName": " AI-powered outbound cold email personalization at scale",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 613925246,
+          "mode": "list",
+          "cachedResultName": "prospects",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U/edit#gid=613925246"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "pending"
+            },
+            {
+              "lookupColumn": "status",
+              "lookupValue": "no_worthy_topic"
+            },
+            {
+              "lookupColumn": "status",
+              "lookupValue": "email_sent"
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        80,
+        0
+      ],
+      "id": "26596b7d-e575-48e6-9c56-bc77bf3128df",
+      "name": "Get row(s) from sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mBp3OodF5jMcrNpo",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U",
+          "mode": "list",
+          "cachedResultName": " AI-powered outbound cold email personalization at scale",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 613925246,
+          "mode": "list",
+          "cachedResultName": "prospects",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U/edit#gid=613925246"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('Get row(s) from sheet').item.json.name }}",
+            "company": "={{ $('Get row(s) from sheet').item.json.company }}",
+            "website_url": "={{ $('Get row(s) from sheet').item.json.website_url }}",
+            "linkedin_url": "={{ $('Get row(s) from sheet').item.json.linkedin_url }}",
+            "status": "=replied",
+            "email_address": "={{ $('Get row(s) from sheet').item.json.email_address }}",
+            "email_sent_at": "={{ $('Get row(s) from sheet').item.json.email_sent_at }}",
+            "reason": "={{ $('Get row(s) from sheet').item.json.reason }}",
+            "threadID": "={{ $('Get row(s) from sheet').item.json.threadID }}"
+          },
+          "matchingColumns": [
+            "name"
+          ],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website_url",
+              "displayName": "website_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_address",
+              "displayName": "email_address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_sent_at",
+              "displayName": "email_sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "threadID",
+              "displayName": "threadID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        512,
+        -112
+      ],
+      "id": "6ec1fd7c-8015-4fd4-9ad1-315c939090b7",
+      "name": "Mark Status as Replied",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mBp3OodF5jMcrNpo",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U",
+          "mode": "list",
+          "cachedResultName": " AI-powered outbound cold email personalization at scale",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 613925246,
+          "mode": "list",
+          "cachedResultName": "prospects",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dxxVJxJAtb6JPLvyT-AjCxwHStOYxI_oFhYcfm4G45U/edit#gid=613925246"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('Get row(s) from sheet').item.json.name }}",
+            "company": "={{ $('Get row(s) from sheet').item.json.company }}",
+            "website_url": "={{ $('Get row(s) from sheet').item.json.website_url }}",
+            "linkedin_url": "={{ $('Get row(s) from sheet').item.json.linkedin_url }}",
+            "status": "follow_up_email_sent",
+            "email_address": "={{ $('Get row(s) from sheet').item.json.email_address }}",
+            "email_sent_at": "={{ $now.setZone('Asia/Kolkata').toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            "reason": "={{ $('Get row(s) from sheet').item.json.reason }}",
+            "threadID": "={{ $('Get row(s) from sheet').item.json.threadID }}"
+          },
+          "matchingColumns": [
+            "name"
+          ],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website_url",
+              "displayName": "website_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_address",
+              "displayName": "email_address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_sent_at",
+              "displayName": "email_sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "threadID",
+              "displayName": "threadID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        960,
+        80
+      ],
+      "id": "25448db4-9f02-44d1-b34e-6f15399853dc",
+      "name": "Updating Status",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mBp3OodF5jMcrNpo",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) from sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a thread": {
+      "main": [
+        [
+          {
+            "node": "Mark Status as Replied",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Sending a Follow-Up Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sending a Follow-Up Email": {
+      "main": [
+        [
+          {
+            "node": "Updating Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) from sheet": {
+      "main": [
+        [
+          {
+            "node": "Get a thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "a70d0ee7-bb7c-449e-962e-e42edf693494",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4f8ad9799b19b614ef95ff228fb04f734ceae1b1007d41d1d8d2829380a2690a"
+  },
+  "nodeGroups": [],
+  "id": "EWRZvpgik9aJkPSC",
+  "tags": []
+}

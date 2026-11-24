@@ -1,0 +1,330 @@
+{
+  "name": "Daily Email digest bot",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "n8n.bigfoot01@gmail.com",
+          "mode": "list",
+          "cachedResultName": "n8n.bigfoot01@gmail.com"
+        },
+        "timeMin": "={{ $now.startOf('day').toISO() }}",
+        "timeMax": "={{ $now.endOf('day').toISO() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        -240
+      ],
+      "id": "e27fdde5-b279-48ee-a001-66a69cfef95e",
+      "name": "Get many events",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "KXXwdWyjaPRwsmFm",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "task": "MTExMTcwMzczMTYzMDAzNzI0Mzk6MDow",
+        "limit": 50,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleTasks",
+      "typeVersion": 1,
+      "position": [
+        384,
+        304
+      ],
+      "id": "7ae8a9c7-294d-4283-b73a-a5fce1a6f397",
+      "name": "Get many tasks",
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "qxhYh3TyYrrY3bPI",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=28.392109&longitude=76.450122&daily=weather_code,apparent_temperature_mean,precipitation_probability_mean&timezone=Asia%2FSingapore&start_date=2026-07-07&end_date=2026-07-07",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        384,
+        96
+      ],
+      "id": "33f3778a-7eff-484e-be73-8acf67996177",
+      "name": "open-meteo Weather API caller"
+    },
+    {
+      "parameters": {
+        "url": "https://newsdata.io/api/1/latest?    apikey=pub_4e5763b27f724180b97f7aef82fa19a7   &language=en   &category=technology,sports,science,politics,business   &timezone=asia/kolkata   &image=0   &video=0   &removeduplicate=1   &excludefield=source_id,source_priority,image_url,video_url,content",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        400,
+        -80
+      ],
+      "id": "24025209-a996-413b-ae57-4352c31c295d",
+      "name": "NewsData.io API Caller"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the news, weather, tasks and calendar of a person by which you are to make an email for him summarising the news, mentioning the overview of tasks, telling him about the events today(if any) and also giving him the weather report summary(here, the waether codes will be used and to decode them use this link : \"https://www.nodc.noaa.gov/archive/arc0021/0002199/1.1/data/0-data/HTML/WMO-CODE/WMO4677.HTM\" and don't mention about extracting data from weather code and this link, if the link doesn't work then just ignore the weather code part from weather. )\n\nDate : {{ $now.startOf('day').toISO() }}\n\nTasks:\n\ntitleTask:{{ $json.title ?? \"Not applicable\" }}\nnotesTask:{{ $json.notes ?? \"Not applicable\" }}\nwebviewLinkforTask:{{ $json.webViewLink ?? \"Not applicable\" }}\ntaskDueDate:{{ $json.due ?? \"Not applicable\" }}\n\nWeather:\n\ndate:{{ $json.daily?.time?.[0] ?? \"Not applicable\" }}\nweatherCode:{{ $json.daily?.weather_code?.[0] ?? \"Not applicable\" }}\napparentTemp:{{ $json.daily?.apparent_temperature_mean?.[0] ?? \"Not applicable\" }}\nprecipitaionProbability:{{ $json.daily?.precipitation_probability_mean?.[0] ?? \"Not applicable\" }}\n\nNews:\n\nsourceLink:{{ $json.results?.[0]?.link ?? \"Not applicable\" }}\nnewsTitle:{{ $json.results?.[0]?.title ?? \"Not applicable\" }}\nnewsDescription:{{ $json.results?.[0]?.description ?? \"Not applicable\" }}\nnewsCreator:{{ $json.results?.[0]?.creator?.[0] ?? \"Not applicable\" }}\ncountry:{{ $json.results?.[0]?.country?.[0] ?? \"Not applicable\" }}\n\nEvents:\n\ncreatorEmail:{{ $json.creator?.email ?? \"Not applicable\" }}\neventDescription:{{ $json.description ?? \"Not applicable\" }}\nendingTime:{{ $json.end?.dateTime ?? \"Not applicable\" }}\nstartingTime:{{ $json.start?.dateTime ?? \"Not applicable\" }}\norganizerEmail:{{ $json.organizer?.email ?? \"Not applicable\" }}\nEventSummary:{{ $json.summary ?? \"Not applicable\" }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a daily Slack Digest Bot. You will be provided with latest news, weather, tasks, calendar of the person and you will generate an email to be sent to them based on that everyday early morning."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "87b1b862-b897-40a6-96e4-d8156af75686",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 4,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        736,
+        -32
+      ],
+      "id": "779ae243-9073-4315-8318-8ce2ca1ae94e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        208
+      ],
+      "id": "19a26824-4150-4d8e-800e-4289d837d5ba",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "n8n.bigfoot01@gmail.com",
+        "subject": "={{ $json.output.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.output.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        0
+      ],
+      "id": "57aa92af-f38c-4a4d-b708-43b6ebb6c967",
+      "name": "Send a message",
+      "webhookId": "71e90cde-425c-4e63-9fd9-ebd66a21eec7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eR0ZAYyqa3UaE7dV",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"subject\" : \" \",\n  \"body\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1216,
+        208
+      ],
+      "id": "db7364d5-3fd7-4b06-be09-0928991f03e0",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a7fb4c30-7f69-4068-a224-4fc952e6e419",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get many events": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many tasks": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "open-meteo Weather API caller": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "NewsData.io API Caller": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many events",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "NewsData.io API Caller",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "open-meteo Weather API caller",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get many tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "490a9cef-2707-4fa3-a89a-32f4dd4c113e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "4d9b1e55e53667972c0aa502abb3257202189800f71cf008ae05ddd497c331b1"
+  },
+  "nodeGroups": [],
+  "id": "sgIp05Gu42nOR1NZ",
+  "tags": []
+}

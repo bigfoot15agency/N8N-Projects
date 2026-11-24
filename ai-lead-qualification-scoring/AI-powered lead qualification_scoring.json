@@ -1,0 +1,402 @@
+{
+  "name": "AI-powered lead qualification/scoring",
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        544,
+        208
+      ],
+      "id": "0bb863c3-311b-4b73-a707-ccebcaafa364",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"lead\" : \"which type of lead is it putted in\",\n  \"reason\" : \"reason for placing it in hot/cold lead\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        208
+      ],
+      "id": "4a1b5b6b-3620-4122-90f6-a037986b32b7",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "92cb2b1b-faa3-4dd4-88ff-344ea38a0a15",
+              "leftValue": "={{ $json.output.lead }}",
+              "operator": {
+                "operation": "contains",
+                "type": "string"
+              },
+              "rightValue": "Hot"
+            }
+          ],
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "c845bef3-def4-4d6c-b829-7976cbd39c75",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1Ogz02VkN6LIaVyI9WelZV1FWzPGliOaDhiiSUfM19Fk",
+          "mode": "list",
+          "cachedResultName": "AI-powered lead qualification/scoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ogz02VkN6LIaVyI9WelZV1FWzPGliOaDhiiSUfM19Fk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 506073040,
+          "mode": "list",
+          "cachedResultName": "Demo Requests",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ogz02VkN6LIaVyI9WelZV1FWzPGliOaDhiiSUfM19Fk/edit#gid=506073040"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ],
+      "id": "e7efe6ed-3a43-4c50-9d26-388888e06ec2",
+      "name": "Triggered When Someone fills the typeform and a row appended",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "OoknXR5nw5YQBmNv",
+          "name": "n8n.bigfoo01@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Ogz02VkN6LIaVyI9WelZV1FWzPGliOaDhiiSUfM19Fk",
+          "mode": "list",
+          "cachedResultName": "AI-powered lead qualification/scoring",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ogz02VkN6LIaVyI9WelZV1FWzPGliOaDhiiSUfM19Fk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1336848751,
+          "mode": "list",
+          "cachedResultName": "Cold Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ogz02VkN6LIaVyI9WelZV1FWzPGliOaDhiiSUfM19Fk/edit#gid=1336848751"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Full Name": "={{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"Full Name\"] }}",
+            "Work Email": "={{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"Work Email\"] }}",
+            "Company Name": "={{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"Company Name\"] }}",
+            "Company Size": "={{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"Company Size (Employees)\"] }}",
+            "Industry": "={{ $('Triggered When Someone fills the typeform and a row appended').item.json.Industry }}",
+            "What are you looking to monitor?": "={{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"What are you looking to monitor?\"] }}",
+            "Job Title/Role": "={{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"Job Title / Role\"] }}",
+            "Reason for being Cold Lead": "={{ $json.output.reason }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Work Email",
+              "displayName": "Work Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Size",
+              "displayName": "Company Size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Industry",
+              "displayName": "Industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "What are you looking to monitor?",
+              "displayName": "What are you looking to monitor?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job Title/Role",
+              "displayName": "Job Title/Role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reason for being Cold Lead",
+              "displayName": "Reason for being Cold Lead",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1312,
+        176
+      ],
+      "id": "aa930367-0337-4276-982a-ec25cdf3f11a",
+      "name": "Cold Leads List Maker",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "fK47NHQBtrYMr5Zp",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the data given by the clients about themselves in the type form, which is then saved to Google Sheets, which I brought out to you. After seeing this data mention if they are to be put in the cold leads or hot leads category. \n\n---\n\ntimestamp : {{ $json.Timestamp }}\nfullName : {{ $json['Full Name'] }}\nworkEmail : {{ $json['Work Email'] }}\ncompanyName : {{ $json['Company Name'] }}\ncompanySize : {{ $json['Company Size (Employees)'] }}\nindustry : {{ $json.Industry }}\nwhatTheyLookingToMonitor : {{ $json['What are you looking to monitor?'] }}\njobTitleORrole : {{ $json['Job Title / Role'] }}\n\n---\n\nI can also tell you what a good fit is.\n->Company size: 50-2000 employees (too small = no budget, too big = they have their own tooling already and a 6-month procurement cycle)\n->Industry: tech/SaaS, fintech, or e-commerce — we don't have great luck outside those\n->They used a work email, not a Gmail/Yahoo address (we get a lot of students and tire-kickers using personal emails)\n->Bonus points if the \"company size\" or \"what are you looking to monitor\" field in the form shows they have real infra (mentions Kubernetes, AWS, multiple services, etc.) vs. someone just curious\nFor the leads that don't qualify, don't just delete them — drop them into a list we can run a monthly nurture email to. Maybe someday they'll be big enough.\nAll we currently have is: form submissions landing in a Google Sheet (Typeform → Sheet), and a Slack channel called #hot-leads where reps currently get pinged manually. \nSo make it short and give the reason why it is hot/cold lead.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an intelligent, smart, and highly experienced AI-powered lead qualification bot which will read the data of the clients and will mention their leads as hot or cold so that our company won't waste time on unnecessary leads and only focus on those which are worth giving their time to.\nOur company is an AI automation/workflows agency and clients reach out to us for this very specific reason so keep that in mind always. "
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        688,
+        0
+      ],
+      "id": "0ffb0c30-b93f-4cac-98f0-e5fa1626cbfa",
+      "name": "Lead Qualification Centre"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BHBLF9N2H",
+          "mode": "list",
+          "cachedResultName": "hot-leads"
+        },
+        "text": "=Full Name -> {{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"Full Name\"] }}\nWork Email -> {{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"Work Email\"] }}\nCompany Name/Industry/Size -> {{ $('Triggered When Someone fills the typeform and a row appended').item.json[\"Company Name\"] }} in {{ $('Triggered When Someone fills the typeform and a row appended').item.json.Industry }} ( {{ $('Triggered When Someone fills the typeform and a row appended').item.json['Company Size (Employees)'] }} employees )\nWhat does they want to be monitored -> {{ $('Triggered When Someone fills the typeform and a row appended').item.json['What are you looking to monitor?'] }}\nReason for becoming a hot lead : {{ $json.output.reason }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1312,
+        -16
+      ],
+      "id": "66e91544-8639-4578-ac4b-24a128f77e81",
+      "name": "Hot Leads Sent",
+      "webhookId": "5a92d2dc-0790-4c2a-bb3f-dafdd5a786c3",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json['Work Email'] }}",
+        "subject": "Thanks for reaching out to Big Foot",
+        "emailType": "text",
+        "message": "=Hi {{ $json['Full Name'] }},\\nThanks for taking the time to fill out our demo request — really appreciate you considering Big Foot for {{ $json['Company Name'] }}.\\nBased on what you shared, it looks like now might not be the perfect timing for a deep dive together — but that's okay, and we'd still love to stay in touch. Infrastructure needs change fast, and we'd rather be a resource for you down the line than a one-time pitch today.\\nIn the meantime, feel free to reply to this email anytime if your monitoring needs shift, your team grows, or you just want to ask a quick question — we're happy to help even outside a formal demo.\\nWe'll check back in periodically, but no pressure either way.\\nBest,\\nThe Big Foot Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1520,
+        208
+      ],
+      "id": "9e1f51a7-f59d-4013-a597-2dd38cf81ffb",
+      "name": "Cold Lead Nurturing Email",
+      "webhookId": "15397eaf-c23a-465f-8ca9-370ccbd3135d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ARmyBUibuiQSvncW",
+          "name": "rakshitdagar15"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Lead Qualification Centre",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Lead Qualification Centre",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Hot Leads Sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cold Leads List Maker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triggered When Someone fills the typeform and a row appended": {
+      "main": [
+        [
+          {
+            "node": "Lead Qualification Centre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Qualification Centre": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cold Leads List Maker": {
+      "main": [
+        [
+          {
+            "node": "Cold Lead Nurturing Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "396cb9dd-8e6c-4819-80a3-15bde227fb7c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "4d9b1e55e53667972c0aa502abb3257202189800f71cf008ae05ddd497c331b1"
+  },
+  "nodeGroups": [],
+  "id": "UyUnCQYSvmasNX0o",
+  "tags": []
+}

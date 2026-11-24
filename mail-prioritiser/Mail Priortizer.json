@@ -1,0 +1,170 @@
+{
+  "name": "Mail Priortizer",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=I will provide you with details of my mail that are sent to me. You are to access this data and give off whether the mail is of high priority, low priority, or medium priority. Just give output as label ID for the labels named as high, low or medium, instead of the name of priority you set. After selecting the priority of the mail, you are to, instead of giving out priority as high, low, or medium, give output as the label ID of high, low, and medium given to you in the input by me. Make sure you only give the label ID and not the name of the label. \n\n---\n\nmsgID : {{ $json.id }}\nthreadID : {{ $json.threadId }}\nsubject : {{ $json.Subject }}\nfrom : {{ $json.From }}\nto : {{ $json.To }}\nsnippet : {{ $json.snippet }}\nreadORunread : {{ $json.labels[0].name }}\n\n---\n\nIf you can't understand anything just ignore that part(for eg, msgID, threadID).",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a smart and intelligent AI assistant which separates my mail via the priority order. It checks my mails thoroughly as I am a student and I'm currently applying for multiple universities and colleges for my BTech or BSc college degree. Therefore you are to read my emails, which I will be providing you with the data, and you are just to tell me only the value as high, low, or medium based on the priority. Please make it as accurate as possible. I don't want to miss any important event and neither do I want to read unnecessary emails. I applied for IIM Mumbai, IIM Sambalpur, NFSU, RRU, BML Munjal, Polaris, etc and i would like to get into one of them along with Scaler School of Technology, Newton School of Technology and other institutes with high reputation, placement record and facuilty and facilities.\n\nAfter selecting the priority of the mail, give output as the label ID only — not the name. The label IDs are hardcoded below, use these directly:\n- High priority → Label_7939550059978190118\n- Medium priority → Label_2297118422490084179\n- Low priority → Label_1\n\nMake sure you only give the label ID and not the name of the label."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "d760a26c-b75a-4a7e-82e7-53026aae85f8",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": "={{ $json.output.labelid }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        -48
+      ],
+      "id": "ec68a4d3-26a7-404c-88c5-b7a43788cbc7",
+      "name": "Add label to message",
+      "webhookId": "8466dd83-f061-44ba-96ab-1e2719becac5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EuHfBZAgEkKqZ5rI",
+          "name": "rakshitdagar15@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"labelid\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        768,
+        176
+      ],
+      "id": "6d9609e5-59d1-461c-9318-f26a4f54ad88",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "maxResults": 5,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        368,
+        -16
+      ],
+      "id": "8330cfe9-bcd3-496a-93f5-56d49414cca2",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EuHfBZAgEkKqZ5rI",
+          "name": "rakshitdagar15@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        480,
+        208
+      ],
+      "id": "7ede9ef8-2788-41a0-9e8b-d6d8c3098d00",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "ntEfKGafwBt3thSA",
+          "name": "Temp Email n8n"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Add label to message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "7f4cea1e-4535-4158-8aa8-dd19ce2fb982",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "e6793965ed00ef8b24225f794c889ad2f3f33aea86c5069e2a8e9011c01d120e"
+  },
+  "nodeGroups": [],
+  "id": "YqgL0kNC2XOOKaCt",
+  "tags": []
+}

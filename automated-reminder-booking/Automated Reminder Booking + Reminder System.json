@@ -1,0 +1,752 @@
+{
+  "name": "Automated Reminder Booking + Reminder System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "d2117853-bde5-4e05-ba60-814a7b5583e8",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "89409e86-1af0-410e-8c11-e5c2007c2df7",
+      "name": "Webhook",
+      "webhookId": "d2117853-bde5-4e05-ba60-814a7b5583e8"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=New booking received.\n\nCall type (event slug): {{ $json.body.payload.type }}\nEvent title: {{ $json.body.payload.title }}\nStart time: {{ $json.body.payload.startTime }}\nClient name: {{ $json.body.payload.responses?.name?.value ?? \"Not provided\" }}\nClient email: {{ $json.body.payload.responses?.email?.value ?? \"Not provided\" }}\nWhat they'd like to discuss: {{ $json.body.payload.responses?.notes?.value ?? $json.body.payload.additionalNotes ?? \"No notes provided\" }}\n\nBased on this, classify the prep level needed and respond in the required JSON format. And dont mention JSON in the text, just reply in it's syntax.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You're screening bookings for Karan Bhatia, who consults small D2C brands (think skincare, footwear, home goods - founders doing anywhere from a few lakhs to a few crores a month in revenue, not enterprise clients). He runs three call types: a free 15-min intro, a paid 60-min Strategy Session, and a paid 90-min Technical Audit.\n\nKaran's problem: he glances at his calendar, sees '60 min call,' and walks in unprepared because he didn't actually read what the client wrote. Your job is to read the notes for him and decide if this one needs prep - and be specific about why, not just a category label.\n\nCalibration examples:\n- A client writes: 'want to chat about general growth strategy, we're doing okay but exploring new channels' -> this is LIGHT. Nothing concrete to prep, Karan can wing it with his general expertise.\n- A client writes: 'conversion dropped 30% after a Shopify theme migration, we'll share GA4 and Shopify analytics access beforehand' -> this is HEAVY. There's real data, a specific problem, and an explicit ask to review materials before the call.\n\nAn intro call is always 'none' - it's a free 15-min chat, never worth prepping for. A Strategy Session or Audit gets 'light' if the client's notes are vague/exploratory, and 'heavy' if they mention real numbers, a named problem, or ask Karan to look at something before the call.\n\nRespond only with the following fields, formatted exactly like this - a code block with no language tag, no wrapping curly braces, just the key-value lines:\n```\n  \"call_type\": \"intro\" | \"strategy\" | \"audit\",\n  \"prep_level\": \"none\" | \"light\" | \"heavy\",\n  \"reason\": \"one sentence explaining why, referencing what the client actually wrote\",\n  \"flag_message\": \"a short Slack-ready message for Karan, only if prep_level is 'light' or 'heavy' - otherwise an empty string\"\n```\n\nNever invent details the client didn't provide - if the notes are empty, default to 'light' for Strategy and 'heavy' for Audit, since a 90-min audit with zero context is itself a red flag worth Karan's attention."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "12435722-a633-480d-8d22-04e6d021e3bf",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        208
+      ],
+      "id": "5f93480e-c4ac-48c9-9814-722293e515ab",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"call_type\": {\"type\": \"string\", \"enum\": [\"intro\", \"strategy\", \"audit\"]},\n    \"prep_level\": {\"type\": \"string\", \"enum\": [\"none\", \"light\", \"heavy\"]},\n    \"reason\": {\"type\": \"string\", \"description\": \"one sentence explaining the prep level\"},\n    \"flag_message\": {\"type\": \"string\", \"description\": \"short Slack-ready message, empty string if prep_level is none\"}\n  },\n  \"required\": [\"call_type\", \"prep_level\", \"reason\", \"flag_message\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        208
+      ],
+      "id": "fcd548e0-2062-446d-935d-04cc28534a2e",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "id": "a9df274b-cfc8-4ea2-9f7f-f3da20ad5787",
+      "name": "Google Gemini Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        -176
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -160
+      ],
+      "id": "729061ed-6fa1-48f9-a2d3-74b5609247d4",
+      "name": "Google search in SerpApi",
+      "credentials": {
+        "serpApi": {
+          "id": "V8gnnl2ABUHFy8uQ",
+          "name": "rakshitdagar15"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "id": "e81790fd-ced6-496f-83e9-84e0969e45fa",
+      "name": "Google Gemini Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1232,
+        288
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        304
+      ],
+      "id": "65141fd3-ef56-4bf3-98bf-c804889e606e",
+      "name": "Google search in SerpApi1",
+      "credentials": {
+        "serpApi": {
+          "id": "V8gnnl2ABUHFy8uQ",
+          "name": "rakshitdagar15"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject\": {\"type\": \"string\", \"description\": \"email subject line for the briefing\"},\n    \"body\": {\"type\": \"string\", \"description\": \"the full briefing email body text\"}\n  },\n  \"required\": [\"subject\", \"body\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1504,
+        336
+      ],
+      "id": "f6da0a42-4595-4917-9040-0688f592547c",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"body\" : \" \",\n    \"subject\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1312,
+        -176
+      ],
+      "id": "d1793041-0ca9-4d40-80e1-0b931ea48f5a",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "sendTo": "n8n.bigfoot01@gmail.com",
+        "subject": "={{ $json.output.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.output.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        -368
+      ],
+      "id": "f11cf4ca-546a-4d34-bf36-cfd66b9302e8",
+      "name": "Emailing Myself about the Client's Company",
+      "webhookId": "100502ce-a158-4aae-aef4-4596e731bd6d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eR0ZAYyqa3UaE7dV",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Heavy prep call coming up:\n\nCall type: {{ $('AI Agent').first().json.output.call_type }}\nClient name: {{ $('Webhook').first().json.body.payload.responses?.name?.value ?? \"Not provided\" }}\nClient email: {{ $('Webhook').first().json.body.payload.responses?.email?.value ?? \"Not provided\" }}\nWhat they'd like to discuss: {{ $('Webhook').first().json.body.payload.responses?.notes?.value ?? $('Webhook').first().json.body.payload.additionalNotes ?? \"No notes provided\" }}\nMeeting start time: {{ $('Webhook').first().json.body.payload.startTime }}\n\nWrite the structured briefing email as instructed.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You're writing a real pre-call briefing for Karan Bhatia, a D2C strategy consultant, before a call flagged as HEAVY prep - meaning there's an actual problem with real stakes, not just a general chat.\n\nDo multiple searches: one on the company itself, one on their industry/competitors if relevant, and one on the specific problem they described if it's identifiable (e.g. if they mentioned a conversion drop after a platform migration, search for common causes of that, not just the company name).\n\nStructure the email in three sections:\n- Company Background: what they do, size/stage if discoverable\n- The Problem: restate the client's actual issue in their own terms, don't generalize it\n- Suggested Talking Points: 3-4 specific angles tied directly to what they described - reference their actual numbers/data if given, not generic consulting advice\n\nIf the client mentioned sharing a dashboard, data, or access beforehand, call that out explicitly near the top so Karan doesn't miss it buried in his inbox.\n\nIf research turns up nothing useful, say so plainly rather than inventing details.\n\nOutput the email body text subject line in JSON."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1264,
+        96
+      ],
+      "id": "5447fdc4-279a-4c96-ac5a-ef64e6664f84",
+      "name": "Heavy Prep Research Bot"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Light prep call coming up:\n\nCall type: {{ $('AI Agent').first().json.output.call_type }}\nClient name: {{ $('Webhook').first().json.body.payload.responses?.name?.value ?? \"Not provided\" }}\nClient email: {{ $('Webhook').first().json.body.payload.responses?.email?.value ?? \"Not provided\" }}\nWhat they'd like to discuss: {{ $('Webhook').first().json.body.payload.responses?.notes?.value ?? $('Webhook').first().json.body.payload.additionalNotes ?? \"No notes provided\" }}\nMeeting start time: {{ $('Webhook').first().json.body.payload.startTime }}\n\nWrite the quick heads-up email as instructed.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You're writing a quick heads-up for Karan Bhatia, a D2C strategy consultant, before a call that's been flagged as LIGHT prep. This is NOT deep research - it's a 30-second read so Karan doesn't walk in blind.\n\nDo one search just to confirm what the company actually sells (D2C brand names are often misleading - you can't guess from the name alone). Write 2-3 sentences on the company, then 2 loose discussion angles based on what the client wrote in their notes - nothing elaborate, just enough that Karan has a starting point if the conversation goes quiet.\n\nKeep the whole email to 3 short paragraphs. If you can't find the company at all (personal email, vague notes, nothing searchable), just say so in one line - don't pad it out pretending you found something.\n\nOutput the email body text, subject line in JSON."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1088,
+        -368
+      ],
+      "id": "68728f6b-4a14-402d-aff4-84bef5354b58",
+      "name": "Light Prep Research Bot"
+    },
+    {
+      "parameters": {
+        "sendTo": "n8n.bigfoot01@gmail.com",
+        "subject": "={{ $json.output.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.output.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        96
+      ],
+      "id": "a31edb5e-d7c3-4098-ae86-083e1a3d7589",
+      "name": "Emailing Myself about the Client's Company1",
+      "webhookId": "9269775f-1919-41d7-82d4-577a0c5cb98f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eR0ZAYyqa3UaE7dV",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0135d7e1-fc49-41fd-aac0-c2422d40c3a2",
+              "leftValue": "={{ $json.output.prep_level }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "rightValue": "none"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        560,
+        0
+      ],
+      "id": "231c2478-5915-40b9-92c9-1fc255db27c1",
+      "name": "If prep needed or not"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7c25f205-acad-43d1-ac11-bd44b525c5ee",
+              "leftValue": "={{ $json.output.prep_level }}",
+              "rightValue": "light",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        784,
+        -16
+      ],
+      "id": "7b6ab33a-43f5-4a16-bbc5-a05c1ce52b32",
+      "name": "Heavy prep needed or light"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        528
+      ],
+      "id": "2af55d17-47cb-4547-b28c-9907701146ba",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fit_score\": {\"type\": \"string\", \"enum\": [\"strong\", \"weak\", \"unclear\"]},\n    \"fit_reason\": {\"type\": \"string\", \"description\": \"one sentence explaining the score\"}\n  },\n  \"required\": [\"fit_score\", \"fit_reason\"]\n}"
+      },
+      "id": "332bd55e-46e6-4ac5-98d7-14fd8adf6474",
+      "name": "Structured Output Parser3",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1072,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Free intro call booked. Screen this lead against Karan's ICP.\n\nClient name: {{ $('Webhook').first().json.body.payload.responses?.name?.value ?? \"Not provided\" }}\nClient email: {{ $('Webhook').first().json.body.payload.responses?.email?.value ?? \"Not provided\" }}\nWhat they'd like to discuss: {{ $('Webhook').first().json.body.payload.responses?.notes?.value ?? $('Webhook').first().json.body.payload.additionalNotes ?? \"No notes provided\" }}\n\nScore this lead against the ICP as instructed.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You're screening free 15-minute intro call bookings for Karan Bhatia, a D2C strategy consultant. These calls are unlimited and free, so anyone can book one - your job is a quick sanity check, not gatekeeping, so Karan has context before the call instead of walking in blind.\n\nUse the attached knowledge base document (via the Google Docs tool) for Karan's full ICP criteria - good fit vs poor fit signals, and what data points to weigh. Read it before scoring.\n\nWork only from what's in the booking itself - do not do external research for this screening, this is a fast glance, not due diligence.\n\nRespond only with the following fields, formatted exactly like this - a code block with no language tag, no wrapping curly braces, just the key-value lines:\n```\n  \"fit_score\": \"strong\" | \"weak\" | \"unclear\",\n  \"fit_reason\": \"one sentence explaining the score, referencing what the client actually wrote\"\n```\n\nUse 'unclear' generously - if the notes genuinely don't give enough signal either way, say so honestly rather than forcing a guess. Never invent details the client didn't provide."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        848,
+        352
+      ],
+      "id": "8980a030-4478-48d1-badd-598f71fc3a5c",
+      "name": "Lead Scoring for intro call clients"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1aPK9zdOkmCpo_iyOLs_dc1rEgpaOA9p-W1WO5uU0stg/edit?tab=t.0"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        960,
+        576
+      ],
+      "id": "e666f697-9f44-435b-8129-ff27756a7081",
+      "name": "ICP",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "X8nFihFX6jfSy7SX",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJBSU2ND8",
+          "mode": "list",
+          "cachedResultName": "automated-reminder-15min-free-meetings-data"
+        },
+        "text": "=New free intro call booked - lead screening result:\n\nClient name: {{ $('Webhook').first().json.body.payload.responses?.name?.value ?? \"Not provided\" }}\nClient email: {{ $('Webhook').first().json.body.payload.responses?.email?.value ?? \"Not provided\" }}\nWhat they'd like to discuss: {{ $('Webhook').first().json.body.payload.responses?.notes?.value ?? $('Webhook').first().json.body.payload.additionalNotes ?? \"No notes provided\" }}\nMeeting start time: {{ $('Webhook').first().json.body.payload.startTime }}\n\nFit score: {{ $json.output.fit_score }}\nReason: {{ $json.output.fit_reason }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1280,
+        480
+      ],
+      "id": "c6eb6bd7-93ee-44d5-a543-f7b9791a2d6e",
+      "name": "Intro Call Details",
+      "webhookId": "7a741eb4-73be-4faf-802a-487d4799b8bf",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "cachedResultName": "n8n.bigfoot01@gmail.com",
+          "mode": "list",
+          "value": "n8n.bigfoot01@gmail.com"
+        },
+        "start": "={{ DateTime.fromISO($('Webhook').first().json.body.payload.startTime).minus({hours: 2}).toISO() }}",
+        "end": "={{ DateTime.fromISO($('Webhook').first().json.body.payload.startTime).toISO() }}",
+        "additionalFields": {
+          "description": "=Auto-blocked prep time for {{ $('Webhook').first().json.body.payload.responses?.name?.value ?? \"client\" }}'s Strategy Session. Reason: {{ $('AI Agent').first().json.output.reason }}",
+          "showMeAs": "opaque",
+          "summary": "=Prep block - {{ $('Webhook').first().json.body.payload.responses?.name?.value ?? \"Client\" }} (Light)"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1648,
+        -368
+      ],
+      "id": "b2b20db9-471e-4e39-be2f-3a5b2a833715",
+      "name": "24 hours Busy for preparing",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "KXXwdWyjaPRwsmFm",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "cachedResultName": "n8n.bigfoot01@gmail.com",
+          "mode": "list",
+          "value": "n8n.bigfoot01@gmail.com"
+        },
+        "start": "={{ DateTime.fromISO($('Webhook').first().json.body.payload.startTime).minus({hours: 24}).toISO() }}",
+        "end": "={{ DateTime.fromISO($('Webhook').first().json.body.payload.startTime).toISO() }}",
+        "additionalFields": {
+          "description": "=Auto-blocked prep time for {{ $('Webhook').first().json.body.payload.responses?.name?.value ?? \"client\" }}'s Technical Audit. Reason: {{ $('AI Agent').first().json.output.reason }}",
+          "showMeAs": "opaque",
+          "summary": "=Prep block - {{ $('Webhook').first().json.body.payload.responses?.name?.value ?? \"Client\" }} (Heavy)"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1808,
+        96
+      ],
+      "id": "27686c4f-92d6-4eba-81c5-6bc46bda5e0d",
+      "name": "2 hours busy for preparing",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "KXXwdWyjaPRwsmFm",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If prep needed or not",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Light Prep Research Bot",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google search in SerpApi": {
+      "ai_tool": [
+        [
+          {
+            "node": "Light Prep Research Bot",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Heavy Prep Research Bot",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google search in SerpApi1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Heavy Prep Research Bot",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Heavy Prep Research Bot",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Light Prep Research Bot",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Light Prep Research Bot": {
+      "main": [
+        [
+          {
+            "node": "Emailing Myself about the Client's Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Heavy Prep Research Bot": {
+      "main": [
+        [
+          {
+            "node": "Emailing Myself about the Client's Company1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If prep needed or not": {
+      "main": [
+        [
+          {
+            "node": "Heavy prep needed or light",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lead Scoring for intro call clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Heavy prep needed or light": {
+      "main": [
+        [
+          {
+            "node": "Light Prep Research Bot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Heavy Prep Research Bot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emailing Myself about the Client's Company": {
+      "main": [
+        [
+          {
+            "node": "24 hours Busy for preparing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emailing Myself about the Client's Company1": {
+      "main": [
+        [
+          {
+            "node": "2 hours busy for preparing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Lead Scoring for intro call clients",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Lead Scoring for intro call clients",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Scoring for intro call clients": {
+      "main": [
+        [
+          {
+            "node": "Intro Call Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ICP": {
+      "ai_tool": [
+        [
+          {
+            "node": "Lead Scoring for intro call clients",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "630e4915-8aa4-4900-aee4-f6471f9fd85e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "4d9b1e55e53667972c0aa502abb3257202189800f71cf008ae05ddd497c331b1"
+  },
+  "nodeGroups": [],
+  "id": "TT2pCAnMWkvGw2s6",
+  "tags": []
+}

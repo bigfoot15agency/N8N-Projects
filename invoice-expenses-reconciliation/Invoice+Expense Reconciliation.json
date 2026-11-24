@@ -1,0 +1,436 @@
+{
+  "name": "Invoice+Expense Reconciliation",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -48
+      ],
+      "id": "d7983357-48d8-4cd2-b571-28228d6dff96",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.stripe.com/v1/charges",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        144,
+        -48
+      ],
+      "id": "88257ea1-6d0c-46cc-9cc6-224255f5e58f",
+      "name": "Stripe HTTP Request Node",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        160
+      ],
+      "id": "7c738556-bd47-49c3-b3a6-95c3acd083b3",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"name\" : \" \",\n  \"status\" : \" \",\n  \"reason\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        144
+      ],
+      "id": "622004c3-3238-4abc-9719-532368899e58",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Access the google sheets tool for every message you get (it contains the invoice data).\n\nHere is the stripe data:\nname : {{ $json.billing_details.name }}\ndescription : {{ $json.description }}\namount : {{ $json.amount }}{{ $json.currency }}\nstatus : {{ $json.status }}\n\nThe output must not be giving sometimes a dictionary and sometimes a list, but instead it must be one of them for all the client's data.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an intelligent and smart invoice and payment re-checker.\n\nWe invoice clients through our own system (basically a Google Sheet, honestly), and payments come in through Stripe. The problem: our bookkeeper manually checks Stripe against our invoice sheet once a month, and it's slow and error-prone. Half the time a payment comes in and it takes weeks before anyone notices whether it actually matches the invoice it was supposed to pay.\n\nHere's what makes it messy:\nClient names never match exactly between our invoice sheet and what Stripe shows. Our sheet says \"Bright Path Wellness,\" Stripe might show \"BRIGHTPATH WELLNESS LLC\" or just a random-looking charge description.\nSometimes clients pay in two installments instead of one lump sum — so one invoice might match against two separate Stripe payments, not one.\nOnce, a client accidentally paid the same invoice twice. Nobody caught it for over a month, and we had to awkwardly refund them.\nWe invoice everyone in USD, but Stripe occasionally shows a payment converted from a different currency if a client's card was foreign — the amount doesn't line up perfectly with what we invoiced because of conversion.\n\nWhat I want: Check Stripe payments against our invoice sheet automatically, and tells us — clearly — which invoices are fully paid, which are still open, and which payments look weird and need a human to actually look at them (like the double-payment situation, or something that doesn't match anything at all).\n\n---\n\nOutput format:\n\"name\" : \"name of the client\"\n\"status\" : \"open\" | \"paid\" | \"manual_checking\"\n\"reason\" : \"reason for the flagging\"\n\"invoice_id\" : \"extract from the google sheets\"\n\n---\n\nYou can find the data using the Google Sheets tool for invoices.\nNo need to write anything else, just return the json schemas and not any text."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        -48
+      ],
+      "id": "cfef7499-f852-4775-b7d1-799c33888fd3",
+      "name": "Invoice and Payment Checker"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "This is the Google Sheets tool to access the invoice data.",
+        "documentId": {
+          "__rl": true,
+          "value": "1vfrb7IrW--CU8dxx3DGHGN2C0UlzRqTsUbBhqYYNzuI",
+          "mode": "list",
+          "cachedResultName": "Invoice/Expense Reconciliation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vfrb7IrW--CU8dxx3DGHGN2C0UlzRqTsUbBhqYYNzuI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 439810267,
+          "mode": "list",
+          "cachedResultName": "Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vfrb7IrW--CU8dxx3DGHGN2C0UlzRqTsUbBhqYYNzuI/edit#gid=439810267"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        160
+      ],
+      "id": "1e60a9bf-9f40-4b97-bcad-6796db788a1c",
+      "name": "Invoice Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "fK47NHQBtrYMr5Zp",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4a3ac015-4142-4af9-9903-1af2a6a3512f",
+              "leftValue": "={{ $json.output[0].status }}",
+              "rightValue": "manual_checking",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        704,
+        -48
+      ],
+      "id": "3215295e-10f2-43e2-a54b-fd8f1dfb5367",
+      "name": "If Manual Checking needed"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BLQ6ENJQ0",
+          "mode": "list",
+          "cachedResultName": "invoice-expenses-reconciliation"
+        },
+        "text": "=payment_id : {{ $('Stripe HTTP Request Node').item.json.id }}\ninvoice_id : {{ $json.output[0].invoice_id }}\nName : {{ $json.output[0].name }}\nWhy Here : {{ $json.output[0].reason }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        912,
+        -64
+      ],
+      "id": "71dbac94-7a9b-4918-b34b-7538c57a0aff",
+      "name": "Informing the team",
+      "webhookId": "4129ebd5-823a-4d75-b9bc-1f541e54111f",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1vfrb7IrW--CU8dxx3DGHGN2C0UlzRqTsUbBhqYYNzuI",
+          "mode": "list",
+          "cachedResultName": "Invoice/Expense Reconciliation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vfrb7IrW--CU8dxx3DGHGN2C0UlzRqTsUbBhqYYNzuI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 439810267,
+          "mode": "list",
+          "cachedResultName": "Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vfrb7IrW--CU8dxx3DGHGN2C0UlzRqTsUbBhqYYNzuI/edit#gid=439810267"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Invoice ID": "={{ $json.output[0].invoice_id }}",
+            "Checked?": "Yes"
+          },
+          "matchingColumns": [
+            "Invoice ID"
+          ],
+          "schema": [
+            {
+              "id": "Invoice ID",
+              "displayName": "Invoice ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Amount Due",
+              "displayName": "Amount Due",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date Issued",
+              "displayName": "Date Issued",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Checked?",
+              "displayName": "Checked?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        912,
+        112
+      ],
+      "id": "f7f68a58-53f4-4f36-b07b-5ca52eb1b0f0",
+      "name": "Updating the invoice data about correct data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "fK47NHQBtrYMr5Zp",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Stripe HTTP Request Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe HTTP Request Node": {
+      "main": [
+        [
+          {
+            "node": "Invoice and Payment Checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Invoice and Payment Checker",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Invoice and Payment Checker",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice and Payment Checker": {
+      "main": [
+        [
+          {
+            "node": "If Manual Checking needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Data": {
+      "ai_tool": [
+        [
+          {
+            "node": "Invoice and Payment Checker",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Manual Checking needed": {
+      "main": [
+        [
+          {
+            "node": "Informing the team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Updating the invoice data about correct data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "f3da0a24-a964-4a11-99d7-b5c0396bc760",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "4d9b1e55e53667972c0aa502abb3257202189800f71cf008ae05ddd497c331b1"
+  },
+  "nodeGroups": [],
+  "id": "v2SapAaLQoXVjavM",
+  "tags": []
+}

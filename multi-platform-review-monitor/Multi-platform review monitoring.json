@@ -1,0 +1,1036 @@
+{
+  "name": "Multi-platform review monitoring",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "548b99d8-8bb0-4f35-a6db-d5d08ae77875",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        400,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "platform",
+              "type": "string",
+              "value": "google"
+            },
+            {
+              "id": "a2",
+              "name": "displayName.text",
+              "type": "string",
+              "value": "The Curry Leaf"
+            },
+            {
+              "id": "a3",
+              "name": "reviews",
+              "type": "array",
+              "value": "=[{\"name\":\"places/ChIJ.../reviews/abc123\",\"rating\":1,\"text\":{\"text\":\"Got food poisoning after eating here last week. Chicken tikka tasted off. Never coming back.\"},\"authorAttribution\":{\"displayName\":\"Rohan M.\"},\"publishTime\":\"2026-07-19T14:22:00Z\"},{\"name\":\"places/ChIJ.../reviews/def456\",\"rating\":5,\"text\":{\"text\":\"Best butter chicken in the city, hands down. Staff was incredibly warm and the ambiance is perfect for a date night.\"},\"authorAttribution\":{\"displayName\":\"Priya S.\"},\"publishTime\":\"2026-07-16T19:05:00Z\"},{\"name\":\"places/ChIJ.../reviews/ghi789\",\"rating\":3,\"text\":{\"text\":\"\"},\"authorAttribution\":{\"displayName\":\"Anonymous\"},\"publishTime\":\"2026-07-14T10:00:00Z\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "633f4183-56f5-47b0-9519-74c843ef400a",
+      "name": "Google Reviews",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        96
+      ],
+      "notes": "Simulated Google Places API (New) response - Place Details endpoint with reviews field. Real call would be: GET https://places.googleapis.com/v1/places/{PLACE_ID} with X-Goog-Api-Key and X-Goog-FieldMask: displayName,reviews,rating headers. Swap this Set node for a real HTTP Request node once billing is set up."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "platform",
+              "type": "string",
+              "value": "trustpilot"
+            },
+            {
+              "id": "b2",
+              "name": "reviews",
+              "type": "array",
+              "value": "=[{\"id\":\"tp_review_001\",\"stars\":2,\"title\":\"Waiter was rude, food was fine\",\"text\":\"The food itself was good but our waiter was dismissive and clearly didn't want to be there. Made the whole experience uncomfortable.\",\"consumer\":{\"displayName\":\"Karan T.\"},\"createdAt\":\"2026-07-20T11:30:00Z\"},{\"id\":\"tp_review_002\",\"stars\":5,\"title\":\"Catering was a hit at our office party\",\"text\":\"Ordered catering for 30 people, everything arrived on time, hot, and beautifully presented. Highly recommend for corporate events.\",\"consumer\":{\"displayName\":\"Anjali D.\"},\"createdAt\":\"2026-07-18T09:15:00Z\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "737a28bb-36ff-471b-966c-a2df8a082d76",
+      "name": "Trustpilot Reviews",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        304
+      ],
+      "notes": "Simulated Trustpilot Business API response shape. Real call would require a verified Trustpilot Business account and API key: GET https://api.trustpilot.com/v1/business-units/{UNIT_ID}/reviews"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "platform",
+              "type": "string",
+              "value": "zomato"
+            },
+            {
+              "id": "c2",
+              "name": "reviews",
+              "type": "array",
+              "value": "=[{\"review_id\":\"zm_998877\",\"rating\":1,\"review_text\":\"Waited 90 minutes for delivery and the food arrived cold. Called support and got no response. Extremely disappointed.\",\"reviewer_name\":\"Sameer K.\",\"review_time\":\"2026-07-20T20:45:00Z\"},{\"review_id\":\"zm_998878\",\"rating\":4,\"review_text\":\"Great flavors, generous portions. Delivery was a bit slow but the food made up for it.\",\"reviewer_name\":\"Neha R.\",\"review_time\":\"2026-07-19T13:10:00Z\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c207b1f2-6cbd-4fe3-ba76-1d3c41d1353b",
+      "name": "Zomato Reviews",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        512
+      ],
+      "notes": "Zomato has no practical public API for review pulling - this simulates a plausible response shape for portfolio/testing purposes only."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The reviews are as follows:\n\nplatform : {{ $json.platform ?? \"N/A\" }}\nrating : {{ $json.reviews?.[0]?.rating ?? \"N/A\" }}\nreview_text : {{ $json.reviews?.[0]?.review_text ?? \"N/A\" }}\nreview_giver's_name : {{ $json.reviews?.[0]?.reviewer_name ?? \"N/A\" }}\nreview_time : {{ $json.reviews?.[0]?.review_time ?? \"N/A\" }}\n\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a very intelligent and smart review tagging assistant which tags the reviews of our restaurant collected from different platforms such as Google Review, Trust Pilot, Zomato, etc., and then tags them as follows : \n\n\"texted or starred\" : \"text\" | \"stars\"\n\"review\" : \"negative\" | \"positive\"\n\"tag\" : \"tag them based on which department the review should be sent to (for eg. Bad Food goes to cooking, late delivery goes to logistics, etc)\n\nIf the data is not sufficient, don't make up from your side, just simply say that.\nMention the review as \"star\" only if there isn't any text, otherwise mention it as \"text\"."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1040,
+        592
+      ],
+      "id": "c9dfea9f-bba0-4cf0-a2fc-44731c7d080a",
+      "name": "Zomato Review Tagger"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        768
+      ],
+      "id": "9b4f88c5-d977-4e32-9baf-60d563681a46",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"tag\" : \" \",\n  \"texted_or_starred\" : \" \",\n  \"review\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1200,
+        768
+      ],
+      "id": "8a688e3c-251e-4580-84e7-08b2d097abaf",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        80
+      ],
+      "id": "e937db14-7248-4c91-979c-b3ffb5e2d1a6",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"tag\" : \" \",\n  \"texted_or_starred\" : \" \",\n  \"review\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1216,
+        80
+      ],
+      "id": "abbd2880-5770-4d45-b47a-6bf09a7a5e1a",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        416
+      ],
+      "id": "010b15be-6e6b-43c7-a532-d89a6d729a46",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"tag\" : \" \",\n  \"texted_or_starred\" : \" \",\n  \"review\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1216,
+        416
+      ],
+      "id": "7acb919b-9915-4a91-9827-b8816d31aae4",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The reviews are as follows:\n\nplatform : {{ $json.platform ?? \"N/A\" }}\nrating : {{ $json.reviews?.[0]?.rating ?? \"N/A\" }}\nreview_text : {{ $json.reviews?.[0]?.text?.text ?? \"N/A\" }}\nreview_giver's_name : {{ $json.reviews?.[0]?.authorAttribution?.displayName ?? \"N/A\" }}\nreview_time : {{ $json.reviews?.[0]?.publishTime ?? \"N/A\" }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a very intelligent and smart review tagging assistant which tags the reviews of our restaurant collected from different platforms such as Google Review, Trust Pilot, Zomato, etc., and then tags them as follows : \n\n\"texted or starred\" : \"text\" | \"stars\"\n\"review\" : \"negative\" | \"positive\"\n\"tag\" : \"tag them based on which department the review should be sent to (for eg. Bad Food goes to cooking, late delivery goes to logistics, etc)\n\nIf the data is not sufficient, don't make up from your side, just simply say that.\nMention the review as \"star\" only if there isn't any text, otherwise mention it as \"text\"."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1056,
+        -96
+      ],
+      "id": "f65ebc10-5fe4-4614-93cd-0d36b299df72",
+      "name": "Google Review Tagger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The reviews are as follows:\n\nplatform : {{ $json.platform ?? \"N/A\" }}\nstars : {{ $json.reviews?.[0]?.stars ?? \"N/A\" }}\nreview_title : {{ $json.reviews?.[0]?.title ?? \"N/A\" }}\nreview_text : {{ $json.reviews?.[0]?.text ?? \"N/A\" }}\nreview_giver's_name : {{ $json.reviews?.[0]?.consumer?.displayName ?? \"N/A\" }}\nreview_time : {{ $json.reviews?.[0]?.createdAt ?? \"N/A\" }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a very intelligent and smart review tagging assistant which tags the reviews of our restaurant collected from different platforms such as Google Review, Trust Pilot, Zomato, etc., and then tags them as follows : \n\n\"texted or starred\" : \"text\" | \"stars\"\n\"review\" : \"negative\" | \"positive\"\n\"tag\" : \"tag them based on which department the review should be sent to (for eg. Bad Food goes to cooking, late delivery goes to logistics, etc)\n\nIf the data is not sufficient, don't make up from your side, just simply say that.\nMention the review as \"star\" only if there isn't any text, otherwise mention it as \"text\"."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1056,
+        240
+      ],
+      "id": "70179fea-c764-4765-9951-e7e7f6c97bbf",
+      "name": "Trustpilot Review Tagger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "71c8c7f1-9c9b-4f70-8265-1464b496ce88",
+              "leftValue": "={{ $json.output.review }}",
+              "rightValue": "positive",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1408,
+        -96
+      ],
+      "id": "09812e85-b140-4f4b-aecc-da76342a419b",
+      "name": "Negative or Positive Review"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "71c8c7f1-9c9b-4f70-8265-1464b496ce88",
+              "leftValue": "={{ $json.output.review }}",
+              "rightValue": "positive",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1440,
+        256
+      ],
+      "id": "84d6113d-bf80-4b06-b88c-3ec588351fce",
+      "name": "Negative or Positive Review1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "71c8c7f1-9c9b-4f70-8265-1464b496ce88",
+              "leftValue": "={{ $json.output.review }}",
+              "rightValue": "positive",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1408,
+        592
+      ],
+      "id": "5b971207-69bb-4ae2-9e86-334c11d0bc5a",
+      "name": "Negative or Positive Review2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM",
+          "mode": "list",
+          "cachedResultName": "Multi-Platform Review Positive Review Storage",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1740851584,
+          "mode": "list",
+          "cachedResultName": "Zomato",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM/edit#gid=1740851584"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "review_id": "={{ $('Zomato Reviews').item.json.reviews[0].review_id }}",
+            "rating": "={{ $('Zomato Reviews').item.json.reviews[0].rating }}",
+            "review_text": "={{ $('Zomato Reviews').item.json.reviews[0].review_text }}",
+            "reviewer_name": "={{ $('Zomato Reviews').item.json.reviews[0].reviewer_name }}",
+            "review_time": "={{ $('Zomato Reviews').item.json.reviews[0].review_time }}",
+            "tag": "={{ $('Zomato Review Tagger').item.json.output.tag }}"
+          },
+          "matchingColumns": [
+            "texted or starred"
+          ],
+          "schema": [
+            {
+              "id": "review_id",
+              "displayName": "review_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "rating",
+              "displayName": "rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "review_text",
+              "displayName": "review_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reviewer_name",
+              "displayName": "reviewer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "review_time",
+              "displayName": "review_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tag",
+              "displayName": "tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1680,
+        560
+      ],
+      "id": "be87bbd0-d1ee-4694-a05a-c03481015051",
+      "name": "Positive Review Storage (Zomato)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "fK47NHQBtrYMr5Zp",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM",
+          "mode": "list",
+          "cachedResultName": "Multi-Platform Review Positive Review Storage",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1258409712,
+          "mode": "list",
+          "cachedResultName": "Trustpilot",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM/edit#gid=1258409712"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('Trustpilot Reviews').item.json.reviews[0].id }}",
+            "Stars": "={{ $('Trustpilot Reviews').item.json.reviews[0].stars }}",
+            "Title": "={{ $('Trustpilot Reviews').item.json.reviews[0].title }}",
+            "Review Text": "={{ $('Trustpilot Reviews').item.json.reviews[0].text }}",
+            "Reviewer's Name": "={{ $('Trustpilot Reviews').item.json.reviews[0].consumer.displayName }}",
+            "Created At": "={{ $('Trustpilot Reviews').item.json.reviews[0].createdAt }}",
+            "Tag": "={{ $('Trustpilot Review Tagger').item.json.output.tag }}"
+          },
+          "matchingColumns": [
+            "texted or starred"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Stars",
+              "displayName": "Stars",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Review Text",
+              "displayName": "Review Text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Reviewer's Name",
+              "displayName": "Reviewer's Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tag",
+              "displayName": "Tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1696,
+        208
+      ],
+      "id": "5924a325-ac7b-4740-a7af-7254a0551e39",
+      "name": "Positive Review Storage(Trustpilot)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "fK47NHQBtrYMr5Zp",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM",
+          "mode": "list",
+          "cachedResultName": "Multi-Platform Review Positive Review Storage",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Google Review",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ekJrZxgqbun-jIb14MZ6yDhFqe3dW6vYXA2p87NUPCM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('Google Reviews').item.json.reviews[0].name }}",
+            "Tag": "={{ $json.output.tag }}",
+            "Publish Time": "={{ $('Google Reviews').item.json.reviews[0].publishTime }}",
+            "Text": "={{ $('Google Reviews').item.json.reviews[0].text.text }}",
+            "Rating": "={{ $('Google Reviews').item.json.reviews[0].rating }}",
+            "Reviewer Name": "={{ $('Google Reviews').item.json.reviews[0].authorAttribution.displayName }}"
+          },
+          "matchingColumns": [
+            "texted or starred"
+          ],
+          "schema": [
+            {
+              "id": "Reviewer Name",
+              "displayName": "Reviewer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Rating",
+              "displayName": "Rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Text",
+              "displayName": "Text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Publish Time",
+              "displayName": "Publish Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tag",
+              "displayName": "Tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1664,
+        -144
+      ],
+      "id": "f6c2f486-448c-4ac1-8a0a-b75dd2d2c890",
+      "name": "Positive Review Storage(Google Review)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "fK47NHQBtrYMr5Zp",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJNSYEARL",
+          "mode": "list",
+          "cachedResultName": "negative-reveiws-immediate-action"
+        },
+        "text": "=PlatForm : {{ $('Google Reviews').item.json.platform }}\nTag : {{ $('Google Review Tagger').item.json.output.tag }}\nTexted or Starred : {{ $('Google Review Tagger').item.json.output['texted or starred'] }}\nname : {{ $('Google Reviews').item.json.reviews[0].name }}\nReview Giver's Name : {{ $('Google Reviews').item.json.reviews[0].authorAttribution.displayName }}\nRating : {{ $('Google Reviews').item.json.reviews[0].rating }}\nReview Text : {{ $('Google Reviews').item.json.reviews[0].text.text }}\nPublish Time : {{ $('Google Reviews').item.json.reviews[0].publishTime }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1664,
+        32
+      ],
+      "id": "def8bdca-f900-4729-a3e3-04ba48e8bd1e",
+      "name": "Negative Reviews Action Team(Google Review)",
+      "webhookId": "5ffea1ea-2f51-40cf-aea5-b67893e90eb9",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJNSYEARL",
+          "mode": "list",
+          "cachedResultName": "negative-reveiws-immediate-action"
+        },
+        "text": "=platform : {{ $('Trustpilot Reviews').item.json.platform }}\ntag : {{ $('Trustpilot Review Tagger').item.json.output.tag }}\nreview_id : {{ $('Trustpilot Reviews').item.json.reviews[0].id }}\nstars : {{ $('Trustpilot Reviews').item.json.reviews[0].stars }}\ntitle : {{ $('Trustpilot Reviews').item.json.reviews[0].title }}\nreview_text : {{ $('Trustpilot Reviews').item.json.reviews[0].text }}\nreviewer's_name : {{ $('Trustpilot Reviews').item.json.reviews[0].consumer.displayName }}\ncreated_at : {{ $('Trustpilot Reviews').item.json.reviews[0].createdAt }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1696,
+        384
+      ],
+      "id": "7f71ff81-102a-4b3d-bdd7-c3fba4b7b4ba",
+      "name": "Negative Reviews Action Team(Trustpilot)",
+      "webhookId": "5ffea1ea-2f51-40cf-aea5-b67893e90eb9",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJNSYEARL",
+          "mode": "list",
+          "cachedResultName": "negative-reveiws-immediate-action"
+        },
+        "text": "=platform : {{ $('Zomato Reviews').item.json.platform }}\ntag : {{ $json.output.tag }}\nreview_id : {{ $('Zomato Reviews').item.json.reviews[0].review_id }}\nrating : {{ $('Zomato Reviews').item.json.reviews[0].rating }}\nreview_text : {{ $('Zomato Reviews').item.json.reviews[0].review_text }}\nreviewer_name : {{ $('Zomato Reviews').item.json.reviews[0].reviewer_name }}\nreview_time : {{ $('Zomato Reviews').item.json.reviews[0].review_time }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1680,
+        736
+      ],
+      "id": "641b4719-6994-41cd-9e78-f1452bfba6b7",
+      "name": "Negative Reviews Action Team(Zomato)",
+      "webhookId": "5ffea1ea-2f51-40cf-aea5-b67893e90eb9",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Reviews",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trustpilot Reviews",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Zomato Reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Reviews": {
+      "main": [
+        [
+          {
+            "node": "Google Review Tagger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trustpilot Reviews": {
+      "main": [
+        [
+          {
+            "node": "Trustpilot Review Tagger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zomato Reviews": {
+      "main": [
+        [
+          {
+            "node": "Zomato Review Tagger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Zomato Review Tagger",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Zomato Review Tagger",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Google Review Tagger",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Google Review Tagger",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Trustpilot Review Tagger",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Trustpilot Review Tagger",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Review Tagger": {
+      "main": [
+        [
+          {
+            "node": "Negative or Positive Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Negative or Positive Review": {
+      "main": [
+        [
+          {
+            "node": "Positive Review Storage(Google Review)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Negative Reviews Action Team(Google Review)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Negative or Positive Review1": {
+      "main": [
+        [
+          {
+            "node": "Positive Review Storage(Trustpilot)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Negative Reviews Action Team(Trustpilot)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trustpilot Review Tagger": {
+      "main": [
+        [
+          {
+            "node": "Negative or Positive Review1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Negative or Positive Review2": {
+      "main": [
+        [
+          {
+            "node": "Positive Review Storage (Zomato)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Negative Reviews Action Team(Zomato)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zomato Review Tagger": {
+      "main": [
+        [
+          {
+            "node": "Negative or Positive Review2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "e80d37e2-cf52-4b09-8c71-069d1f896bdb",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d9b1e55e53667972c0aa502abb3257202189800f71cf008ae05ddd497c331b1"
+  },
+  "nodeGroups": [],
+  "id": "rnYDZyHI2pvHtoru",
+  "tags": []
+}

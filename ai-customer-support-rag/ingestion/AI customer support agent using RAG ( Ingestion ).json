@@ -1,0 +1,192 @@
+{
+  "name": "AI customer support agent using RAG ( Ingestion )",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9b3fa08d-86be-487b-b94d-f338ebf7e930",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8n-projects",
+          "mode": "list",
+          "cachedResultName": "n8n-projects"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        -16
+      ],
+      "id": "31ecda8d-622c-4aa9-9a63-5f8ae0f94435",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "8zdWAooUHIVRAeT1",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 512
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        208
+      ],
+      "id": "e3f62cb2-84a6-420f-b185-d9e096a25dad",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "qkbesLakOP9FEoGb",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        176
+      ],
+      "id": "bb93d4a1-cb5a-4dbd-9210-e42357ec6741",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 500,
+        "chunkOverlap": 55,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        496,
+        352
+      ],
+      "id": "2f5413a8-3956-49b5-9357-e1034270b2cb",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1W498qPjGt_qaSeIjMtwP9UzRxJidlKcC",
+          "mode": "list",
+          "cachedResultName": "verilith-devtools-support-docs.md",
+          "cachedResultUrl": "https://drive.google.com/file/d/1W498qPjGt_qaSeIjMtwP9UzRxJidlKcC/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "766678d4-a86d-4f82-88fb-5fca8b07b09a",
+      "name": "Repeatedly asked Queries",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "qckq4Sctb4Myzdsz",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Repeatedly asked Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repeatedly asked Queries": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "17f5b4e3-195a-49d6-b15b-a4976f7c550f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4f8ad9799b19b614ef95ff228fb04f734ceae1b1007d41d1d8d2829380a2690a"
+  },
+  "nodeGroups": [],
+  "id": "swz7vuZ35MWY0pJc",
+  "tags": []
+}

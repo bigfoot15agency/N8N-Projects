@@ -1,0 +1,678 @@
+{
+  "name": "Recruitement Pipeline Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1WJL8zibj0HgNJFnaIAzEsOKVI20gCw4r",
+          "mode": "list",
+          "cachedResultName": "Recruitment Pipeline Automation(n8n)",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1WJL8zibj0HgNJFnaIAzEsOKVI20gCw4r"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f9f2421e-cd03-49b5-bebd-56a081904a24",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "iycDwjV0FhuNpv9U",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The applicant's details/resume:\nresume_text : {{ $json.text }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a smart and honest recruiment assistant.\nWho reads the resume and based on the company's demands for the job, gives the applicant a score out o 10.\nThe applicants are applying for Marketing Associate  in a D2C activewear + fitness app startup with 18 employees.\n\nCompany's Demand(roughly in priority order) :\n->2+ years in D2C/e-commerce marketing specifically (not agency-side, not B2B)\n->Some hands-on experience with Instagram/TikTok content or paid social ads\n->Any startup experience is a strong plus — we move fast and someone from a big slow company usually struggles here\n->A 4-year degree is NOT required — we've hired great people without one\n\nIf there isn't any text in the pdf file but instead the applicant posted an image of the resume or some corrupted or different type of file, don't just flag it as rejected but instead tag it for \"Manual_Checking\".\n\nAnyone having a score of more than 7 out of 10 is accpeted and those below 5 are rejected and those who are even on the border-line are to be flagged as \"Manual_Checking\".\n\nYou are to give output as in the following JSON format:\n\n\"score\" : {\"score out of 10\"}\n\"status\" : {\"rejected\" | \"accepted\" | \"Manual_Checking\"}\n\"reason\" : {\"reason of the score and status\"}\n\"email\" : \"extract their email from the resume(if provided) so that we can mail them about their application\"\n\"applicant_name\" : \"extract the name of the applicant from the resume\""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        688,
+        -16
+      ],
+      "id": "a440474f-5057-4963-8fa1-50320d0c49a6",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        160
+      ],
+      "id": "ea266bc2-84b8-477f-9e64-35af4ee01215",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"score\" : \" \",\n  \"status\" : \" \",\n  \"reason\" : \" \",\n  \"email\" : \" \",\n  \"applicant_name\" : \" \"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        848,
+        176
+      ],
+      "id": "29740a9d-1916-42d4-a91c-2bb3ab243b0b",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        256,
+        0
+      ],
+      "id": "1d23d93a-b9c6-4c67-a894-30dad40af78e",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "iycDwjV0FhuNpv9U",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        0
+      ],
+      "id": "f5aa296d-e15f-46b8-ab85-a1fa3906ca71",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "26cfb3e3-2c29-41c9-8046-5a3032018fce",
+              "leftValue": "={{ $json.output.status }}",
+              "rightValue": "rejected",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        -16
+      ],
+      "id": "1d8c1ad3-b614-4963-a392-5532a8382ea4",
+      "name": "If rejected"
+    },
+    {
+      "parameters": {
+        "sendTo": "=n8n.bigfoot01@gmail.com",
+        "subject": "Update on your application - Marketing Associate at Nimbus Fitness",
+        "message": "=Hi {{ $json.output.applicant_name }},<br><br>Thank you for taking the time to apply for the Marketing Associate role at Nimbus Fitness, and for sharing your background with us.<br><br>After reviewing your application, we've decided to move forward with other candidates whose experience more closely matches what we're looking for at this time.<br><br>This isn't a reflection of your abilities - hiring decisions often come down to a very specific fit for a specific role, and we know that's not always visible from the outside. We'd genuinely encourage you to keep an eye on future openings with us, as our needs evolve quickly.<br><br>Wishing you the best in your search.<br><br>Best,<br>The Nimbus Fitness Team",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1264,
+        -144
+      ],
+      "id": "3c035820-4687-4341-8a2c-0193f3033b63",
+      "name": "Polite Rejection Email",
+      "webhookId": "1acf5079-3788-48fc-a11f-6d95c38c968b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eR0ZAYyqa3UaE7dV",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "98d057a0-065e-4d16-86ba-714653808c90",
+              "leftValue": "={{ $json.output.status }}",
+              "rightValue": "accepted",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1248,
+        80
+      ],
+      "id": "0cda9d20-6299-43bd-a528-c8b01711762f",
+      "name": "If accepted"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Oew9XmeBtxdqL6qtu5J8y_vv52t4VeQb5Z43dMxLx0Q",
+          "mode": "list",
+          "cachedResultName": "Recruitement Pipeline Automation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Oew9XmeBtxdqL6qtu5J8y_vv52t4VeQb5Z43dMxLx0Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Accepted Candidates",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Oew9XmeBtxdqL6qtu5J8y_vv52t4VeQb5Z43dMxLx0Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Candidate's Name": "={{ $('AI Agent').item.json.output.applicant_name }}",
+            "Resume File Link": "={{ $('Download file').item.json.webViewLink }}",
+            "Score": "={{ $('AI Agent').item.json.output.score }}",
+            "AI's Reason": "={{ $('AI Agent').item.json.output.reason }}",
+            "Date Recieved": "={{ DateTime.fromISO($('Google Drive Trigger').item.json.createdTime).setZone('Asia/Kolkata').toFormat('MMMM dd, yyyy, hh:mm a') }}",
+            "Status": "Accepted"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Candidate's Name",
+              "displayName": "Candidate's Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resume File Link",
+              "displayName": "Resume File Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI's Reason",
+              "displayName": "AI's Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date Recieved",
+              "displayName": "Date Recieved",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1456,
+        -16
+      ],
+      "id": "54a487d5-1f52-433a-96e1-f41eef86e670",
+      "name": "Accepted Candidates List",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "fK47NHQBtrYMr5Zp",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Oew9XmeBtxdqL6qtu5J8y_vv52t4VeQb5Z43dMxLx0Q",
+          "mode": "list",
+          "cachedResultName": "Recruitement Pipeline Automation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Oew9XmeBtxdqL6qtu5J8y_vv52t4VeQb5Z43dMxLx0Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1276101925,
+          "mode": "list",
+          "cachedResultName": "Canditates for Manual Checking",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Oew9XmeBtxdqL6qtu5J8y_vv52t4VeQb5Z43dMxLx0Q/edit#gid=1276101925"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Candidate's Name": "={{ $json.output.applicant_name }}",
+            "Resume File Link": "={{ $('Download file').item.json.webViewLink }}",
+            "Score": "={{ $('AI Agent').item.json.output.score }}",
+            "AI's Reason": "={{ $('AI Agent').item.json.output.reason }}",
+            "Date Recieved": "={{ DateTime.fromISO($('Google Drive Trigger').item.json.createdTime).setZone('Asia/Kolkata').toFormat('MMMM dd, yyyy, hh:mm a') }}\n",
+            "Status": "Manual Checking"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Candidate's Name",
+              "displayName": "Candidate's Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resume File Link",
+              "displayName": "Resume File Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI's Reason",
+              "displayName": "AI's Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date Recieved",
+              "displayName": "Date Recieved",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Farah's Decision",
+              "displayName": "Farah's Decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1456,
+        176
+      ],
+      "id": "4303db64-61f0-425e-b228-be00ea1f779d",
+      "name": "Manual Checking Candidates List",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "fK47NHQBtrYMr5Zp",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJKKHTB63",
+          "mode": "list",
+          "cachedResultName": "recuirtement-pipeline-automation-accepted"
+        },
+        "text": "=New shortlisted candidate: {{ $('AI Agent').item.json.output.applicant_name }}\nScore: {{ $('AI Agent').item.json.output.score }}/10\nWhy: {{ $('AI Agent').item.json.output.reason }}\nResume: {{ $('Download file').item.json.webViewLink }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1664,
+        -16
+      ],
+      "id": "29741cc7-6f10-4443-9618-2a23346f32f4",
+      "name": "Accepted Candidate Resume Review",
+      "webhookId": "f2b906cc-4723-4296-bf79-e6af7f3f5173",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BK2TYEULR",
+          "mode": "list",
+          "cachedResultName": "recuirtement-pipeline-automation-manual-checking"
+        },
+        "text": "=Name of Candidate : {{ $('AI Agent').item.json.output.applicant_name }}\nScore : {{ $('AI Agent').item.json.output.score }}/10\nWhy flagged : {{ $('AI Agent').item.json.output.reason }}\nResume : {{ $('Download file').item.json.webViewLink }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1664,
+        176
+      ],
+      "id": "25259995-0ef3-4447-a7cb-f9d40f470975",
+      "name": "Human Reviewing of the Resume",
+      "webhookId": "6d543305-81dd-4e97-9b14-0b84d557437c",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "=n8n.bigfoot01@gmail.com",
+        "subject": "Application in Progress - Nimbus Fitness",
+        "message": "Thanks for applying, we're still reviewing candidates and will follow up soon.",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1872,
+        176
+      ],
+      "id": "1b2f772a-4255-4d46-b0f9-19af56bd2e17",
+      "name": "Letting them know that process is not over yet",
+      "webhookId": "92e9a1d3-b9fb-4ef1-aa5a-3c48d01f6d6d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eR0ZAYyqa3UaE7dV",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If rejected": {
+      "main": [
+        [
+          {
+            "node": "Polite Rejection Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If accepted": {
+      "main": [
+        [
+          {
+            "node": "Accepted Candidates List",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manual Checking Candidates List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accepted Candidates List": {
+      "main": [
+        [
+          {
+            "node": "Accepted Candidate Resume Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Checking Candidates List": {
+      "main": [
+        [
+          {
+            "node": "Human Reviewing of the Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Reviewing of the Resume": {
+      "main": [
+        [
+          {
+            "node": "Letting them know that process is not over yet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "d1820c5d-937c-4c01-b3f3-a9a78acef4f0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d9b1e55e53667972c0aa502abb3257202189800f71cf008ae05ddd497c331b1"
+  },
+  "nodeGroups": [],
+  "id": "tugp5qdz5baQTBRh",
+  "tags": []
+}

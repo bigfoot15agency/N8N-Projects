@@ -1,0 +1,419 @@
+{
+  "name": "Support Ticket Triage + AI drafted response",
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        176
+      ],
+      "id": "c2bb0c63-5129-4e53-8d42-e6caed19e353",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1yuSM8lg28L_GwB_V0kTyQuiCs4JJzCJ_Lt8k-PebcUU/edit?tab=t.0"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        368,
+        208
+      ],
+      "id": "c4e02b8e-a2c0-4b6a-b6e5-a9da381b2326",
+      "name": "Knowledge Base of the Company",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "X8nFihFX6jfSy7SX",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=I will give you the ticket data which our company is getting from the customers (via Email) and you are to just use it and access the knowledge base which is the tool attached with you and use it everytime you encounter a ticket (mandatory step). In case, if you can't find the solution in the knowledge base then still don't use your own data or knowledge and just respond as \"Unavailable in the knowledge base\".\n\nsubject : {{ $json.Subject }}\nsnippet : {{ $json.snippet }}\n",
+        "options": {
+          "systemMessage": "You are smart and experienced company ticket responder and you are to respond only based on the given Knowledge Base of our company only and not with your own data or knowledge."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f309358d-8a0b-454f-8563-4a45a5199f7e",
+      "name": "Ticket Responder"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3048815f-0aaa-4e63-bc0b-6cde048756c0",
+      "name": "Trigger when customer puts a query",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eR0ZAYyqa3UaE7dV",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJ5G4D61K",
+          "mode": "list",
+          "cachedResultName": "support-ticket-unavailable-in-the-knowledge-base"
+        },
+        "text": "=Query Details :\n\nFrom -> {{ $('Trigger when customer puts a query').item.json.From }}\nsubject -> {{ $('Trigger when customer puts a query').item.json.Subject }}\n\nThis Query could not be resolved via the Knowledge Base Data only and you need to check for it yourself.\nsnippet -> {{ $('Trigger when customer puts a query').item.json.snippet }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        784,
+        -80
+      ],
+      "id": "8875606d-0102-48b0-a4e3-b161fc312267",
+      "name": "Not in the Knowledge Base type queries",
+      "webhookId": "c44db564-5eee-4930-b6f3-1155f72752cb",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJ3PK6S11",
+          "mode": "list",
+          "cachedResultName": "support-ticket-human-review"
+        },
+        "message": "=Pls check the details and allow for it to be sent to the customer if it is correct and amend it if not correct.\n\nCustomer's Details:\n\nFrom -> {{ $('Trigger when customer puts a query').item.json.From }}\nSubject -> {{ $('Trigger when customer puts a query').item.json.Subject }}\nsnippet -> {{ $('Trigger when customer puts a query').item.json.snippet }}\n\nAI's Reply : \n\nReply -> {{ $('Ticket Responder').item.json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        768,
+        112
+      ],
+      "id": "20479cc0-f14f-4506-878f-a809dc2a3338",
+      "name": "Human Review Node",
+      "webhookId": "7aebf00e-b07c-4a2c-b3c2-bfabbd66a3e1",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "reply",
+        "threadId": "={{ $('Trigger when customer puts a query').item.json.threadId }}",
+        "messageId": "={{ $('Trigger when customer puts a query').item.json.id }}",
+        "message": "={{ $('Either available in the Knowledge Base or not').item.json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1264,
+        80
+      ],
+      "id": "a7735464-d7d2-4344-807e-4bd7e7295cda",
+      "name": "Reply to a query",
+      "webhookId": "8b25ef96-acaa-4a3b-b27f-f7d16ea19f43",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eR0ZAYyqa3UaE7dV",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "reply",
+        "threadId": "={{ $('Trigger when customer puts a query').item.json.threadId }}",
+        "messageId": "={{ $('Trigger when customer puts a query').item.json.id }}",
+        "message": "={{ $json.data.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        272
+      ],
+      "id": "526620de-7413-44e5-b13b-40f13a67c3b1",
+      "name": "Reply to a message",
+      "webhookId": "bc88968b-15e9-4158-a0f7-3f982527879e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "eR0ZAYyqa3UaE7dV",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJ3PK6S11",
+          "mode": "list",
+          "cachedResultName": "support-ticket-human-review"
+        },
+        "message": "What will be your amended reply?",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1264,
+        272
+      ],
+      "id": "41903ea5-8c05-466e-93fa-fbc67e158103",
+      "name": "Amending the mail",
+      "webhookId": "7f4b2c8c-2eee-4bb7-8b2c-afab81fee8f0",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "UXP4IW0HNCYhDJvL",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "944e7189-f590-4210-8ee6-27b7f3e1421d",
+              "leftValue": "={{ $json.output }}",
+              "operator": {
+                "operation": "contains",
+                "type": "string"
+              },
+              "rightValue": "Unavailable in the knowledge base"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        16
+      ],
+      "id": "1d41e65e-41a0-46f9-b4c1-30f3a8528b28",
+      "name": "Either available in the Knowledge Base or not"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "375dd855-1b87-401c-a400-de54752f48da",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        976,
+        112
+      ],
+      "id": "3cbf6058-bf7c-4d00-8c97-63ff4f4396da",
+      "name": "Approved by Human or not"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ticket Responder",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Knowledge Base of the Company": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ticket Responder",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket Responder": {
+      "main": [
+        [
+          {
+            "node": "Either available in the Knowledge Base or not",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger when customer puts a query": {
+      "main": [
+        [
+          {
+            "node": "Ticket Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Review Node": {
+      "main": [
+        [
+          {
+            "node": "Approved by Human or not",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amending the mail": {
+      "main": [
+        [
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Either available in the Knowledge Base or not": {
+      "main": [
+        [
+          {
+            "node": "Not in the Knowledge Base type queries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Human Review Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved by Human or not": {
+      "main": [
+        [
+          {
+            "node": "Reply to a query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Amending the mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "12cc6ce8-ccce-41bd-ab14-1b138f56b784",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "4d9b1e55e53667972c0aa502abb3257202189800f71cf008ae05ddd497c331b1"
+  },
+  "nodeGroups": [],
+  "id": "mtub3c15guwvkWcu",
+  "tags": []
+}

@@ -1,0 +1,474 @@
+{
+  "name": "Voice-to-CRM Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        -48
+      ],
+      "id": "d69a8081-4a57-4d0b-acb2-2bc6eda96e9f",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"flag\": {},\n  \"summary\": {}\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        656,
+        160
+      ],
+      "id": "513a4eaa-65f0-4532-8f6a-d391a4bff4f4",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        176
+      ],
+      "id": "dab874db-a8d0-465c-b262-78ca6da90ec6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "7oClpAaUih4H44xs",
+          "name": "CometAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "www.fireflies.com",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        16,
+        -32
+      ],
+      "id": "0be68779-4786-45d7-968e-b87be879a69d",
+      "name": "Meeting Transcript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const transcript = $json.sentences\n  .map(s => `${s.speaker}: ${s.text}`)\n  .join('\\n');\n\nreturn [{ json: { transcript } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -32
+      ],
+      "id": "8dffb7ea-0d8a-48e7-8cb5-a99b8c5ae020",
+      "name": "Formatting the transcript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Transcript_ID : {{ $('Meeting Transcript').item.json.transcript_id }}\ntitle : {{ $('Meeting Transcript').item.json.title }}\ndate : {{ $('Meeting Transcript').item.json.date }}\nduration : {{ $('Meeting Transcript').item.json.duration }}\nhost : {{ $('Meeting Transcript').item.json.participants[0].role }}\nguest : {{ $('Meeting Transcript').item.json.participants[1].role }}\ntranscript : {{ $json.transcript }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an intelligent and honest follow-up assistant for a small sales team that runs sales for Coastline Insurance Advisors.\nYou will be given the transcript of the online meeting held on Fireflies.\n\nWhat I want: as soon as a Fireflies transcript is ready, you read it, pull out what actually matters — deal stage, next step + date, objections raised — updates the right HubSpot deal, and creates the follow-up task automatically. Advisors shouldn't have to touch it unless something looks off.\nOne thing — some calls are just chit-chat, or the transcription is garbage (bad audio, crosstalk). In those cases, I'd rather it flag \"nothing actionable here\" than make something up and mess up a real deal's stage.\n\nOutput Format:-\n(Make the summary organized so that the deal stage, next step, date, and objections raised can easily be seen)\n\nflag: {\"nothing_actionable\" | \"needs_advisors\" | \"just_fine\"}\nsummary: {\"Transcript summary\"}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        464,
+        -32
+      ],
+      "id": "fb213ab0-c0d1-4eb6-bd2a-931c77b27dd9",
+      "name": "Transcript Summarizer/Follow-Up assistant"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0bc9ff5f-2afc-4a52-b4b5-7de135f872e6",
+              "leftValue": "={{ $json.output.flag }}",
+              "rightValue": "needs_advisors",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        848,
+        16
+      ],
+      "id": "8c0a7f5d-0282-4fef-a3ba-aa9f4571b4a8",
+      "name": "If Need for Advisor"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C1L5QJNJG",
+          "mode": "list",
+          "cachedResultName": "voice-to-crm"
+        },
+        "text": "=Flag: {{ $('Transcript Summarizer/Follow-Up assistant').item.json.output.flag }}\n\nTranscript:  {{ $('Formatting the transcript').item.json.transcript }}\n\nTranscript Summary:-\nDeal Stage: {{ $json.output.summary['Transcript summary']['Deal Stage'] }}\nNext Step: {{ $json.output.summary['Transcript summary']['Next Step'] }}\nDate: {{ $json.output.summary['Transcript summary'].Date }}\nObjections Raised: {{ $json.output.summary['Transcript summary']['Objections Raised'] }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        1072,
+        -48
+      ],
+      "id": "466b2aa9-6ae5-461d-a2a4-ab7b7db83980",
+      "name": "Advisor",
+      "webhookId": "5307eeee-6bda-4231-9773-17793e271926",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "LfmAc55BYWLFmgpK",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appHLow6MMcbCQTef",
+          "mode": "list",
+          "cachedResultName": "Voice-to-CRM pipeline",
+          "cachedResultUrl": "https://airtable.com/appHLow6MMcbCQTef"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblCuQkbb2GfsM0n9",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appHLow6MMcbCQTef/tblCuQkbb2GfsM0n9"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $('Meeting Transcript').item.json.title }}",
+            "id": "={{ $('Meeting Transcript').item.json.transcript_id }}",
+            "Summary": "={{ JSON.stringify($json.output.summary['Transcript summary']) }}",
+            "Assignee": "={{ $('Meeting Transcript').item.json.participants[1].name }}",
+            "Status": "={{ $json.output.flag }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Assignee",
+              "displayName": "Assignee",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "just_fine",
+                  "value": "just_fine"
+                },
+                {
+                  "name": "needs_advisors",
+                  "value": "needs_advisors"
+                },
+                {
+                  "name": "nothing_actionable",
+                  "value": "nothing_actionable"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Attachments",
+              "displayName": "Attachments",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        144
+      ],
+      "id": "4da1e23f-f106-460c-a809-24bb9a6d3d49",
+      "name": "Updating CRM",
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "oPCsPnJrRGIwvQuR",
+          "name": "Airtable account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Meeting Transcript": [
+      {
+        "json": {
+          "transcript_id": "01HZFFT7NM8K2Q9X3VJD5CPBWE",
+          "title": "Coastline Insurance Advisors <> Arjun Malhotra - Discovery Call",
+          "date": "2026-09-11T15:30:00+05:30",
+          "duration": 1847,
+          "participants": [
+            {
+              "name": "Ritika Oberoi",
+              "role": "host"
+            },
+            {
+              "name": "Arjun Malhotra",
+              "role": "guest"
+            }
+          ],
+          "sentences": [
+            {
+              "speaker": "Ritika Oberoi",
+              "start_time": 4.2,
+              "text": "Hi Arjun, thanks for hopping on. So last time we spoke you were comparing term life plans for your family, right?"
+            },
+            {
+              "speaker": "Arjun Malhotra",
+              "start_time": 12.8,
+              "text": "Yeah, mainly for my wife and me, we've got a 2 year old now so it's become urgent."
+            },
+            {
+              "speaker": "Ritika Oberoi",
+              "start_time": 45.1,
+              "text": "Makes sense. Based on what you told me, I'd suggest the 1 crore term plan with critical illness rider, comes to around 14,000 a year."
+            },
+            {
+              "speaker": "Arjun Malhotra",
+              "start_time": 61.3,
+              "text": "That's a bit steep for us right now honestly. Can we look at something closer to 9 or 10k?"
+            },
+            {
+              "speaker": "Ritika Oberoi",
+              "start_time": 70,
+              "text": "Totally understand, the premium is the main concern. I can drop the rider and bring it to around 9,500, want me to send both quotes?"
+            },
+            {
+              "speaker": "Arjun Malhotra",
+              "start_time": 88.4,
+              "text": "Yeah send both, I want to talk to my wife before deciding anything."
+            },
+            {
+              "speaker": "Ritika Oberoi",
+              "start_time": 95.7,
+              "text": "No problem. I'll email both quotes today. Can we plan a follow-up call next Tuesday to finalize?"
+            },
+            {
+              "speaker": "Arjun Malhotra",
+              "start_time": 104.2,
+              "text": "Tuesday afternoon works, let's say 4 pm."
+            },
+            {
+              "speaker": "Ritika Oberoi",
+              "start_time": 108.9,
+              "text": "Perfect, I'll block 4 pm Tuesday and send the quotes in the next hour."
+            }
+          ],
+          "summary": {
+            "keywords": [
+              "term life",
+              "premium",
+              "critical illness rider",
+              "family plan"
+            ],
+            "action_items": "Send 1cr term quote with and without CI rider to Arjun; follow up call Tuesday 4pm to finalize."
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Meeting Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Transcript Summarizer/Follow-Up assistant",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Transcript Summarizer/Follow-Up assistant",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meeting Transcript": {
+      "main": [
+        [
+          {
+            "node": "Formatting the transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatting the transcript": {
+      "main": [
+        [
+          {
+            "node": "Transcript Summarizer/Follow-Up assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcript Summarizer/Follow-Up assistant": {
+      "main": [
+        [
+          {
+            "node": "If Need for Advisor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Need for Advisor": {
+      "main": [
+        [
+          {
+            "node": "Advisor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Updating CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "b6b5a28b-b5b0-453b-aab6-8127fcfc5fe2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9ce01ee01e36d3b25a0c8ab48926a35b7408cf69985877988298b5e69e2c250a"
+  },
+  "nodeGroups": [],
+  "id": "RLAQuKMedLjj9Xj0",
+  "tags": []
+}

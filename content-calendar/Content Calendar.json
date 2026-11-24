@@ -1,0 +1,294 @@
+{
+  "name": "Content Calendar",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "17tY-QosKR26BGKxFiE_kkYBtgpdtjTISnCf56k5z4-4",
+          "mode": "list",
+          "cachedResultName": "content_calendar_sample",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17tY-QosKR26BGKxFiE_kkYBtgpdtjTISnCf56k5z4-4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 220724367,
+          "mode": "list",
+          "cachedResultName": "Content Calendar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17tY-QosKR26BGKxFiE_kkYBtgpdtjTISnCf56k5z4-4/edit#gid=220724367"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        128
+      ],
+      "id": "0d508807-ffb4-4a32-8f16-328d8efcbca0",
+      "name": "Google Sheets Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Platform }}",
+                    "rightValue": "Instagram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2e022d63-1710-479c-b543-96c547eeeb06"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Instagram"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b84c50c3-6fbf-4abc-8f9a-5b2ed06c4d43",
+                    "leftValue": "={{ $json.Platform }}",
+                    "rightValue": "X",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "X/Twitter"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "99fff03a-2ae7-4e74-b36f-aa2af9cebde2",
+                    "leftValue": "={{ $json.Platform }}",
+                    "rightValue": "LinkedIn",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "LinkedIn"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -368,
+        128
+      ],
+      "id": "95b36e00-aac0-4fcc-92ff-8feaf5d6c552",
+      "name": "Splitting based on Platform"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.Caption }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        0,
+        144
+      ],
+      "id": "94a1ddb4-8518-473d-a167-0d42db07cd15",
+      "name": "Create Tweet"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ca8765e5-9303-4386-8e47-6dfe522ba42f",
+      "name": "Publish"
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        0,
+        288
+      ],
+      "id": "ddec6f74-30a3-41dd-8ba1-1a5a911328a4",
+      "name": "Create a post"
+    }
+  ],
+  "pinData": {
+    "Google Sheets Trigger": [
+      {
+        "json": {
+          "Date": "2026-07-10",
+          "Platform": "Instagram",
+          "Caption": "New cold brew flavor just dropped ☕️🧊 Try it this weekend!",
+          "Image Link (Drive)": "https://drive.google.com/file/d/EXAMPLE1/view",
+          "Status": "Pending",
+          "Post Time": "",
+          "Notes / Error Log": ""
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "Date": "2026-07-10",
+          "Platform": "LinkedIn",
+          "Caption": "Kernel & Co. is expanding to 3 new cities this quarter. Here's what that means for our supply chain team.",
+          "Image Link (Drive)": "https://drive.google.com/file/d/EXAMPLE2/view",
+          "Status": "Pending",
+          "Post Time": "",
+          "Notes / Error Log": ""
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "Date": "2026-07-11",
+          "Platform": "X",
+          "Caption": "Monday fuel: our espresso blend, now back in stock.",
+          "Image Link (Drive)": "https://drive.google.com/file/d/EXAMPLE3/view",
+          "Status": "Pending",
+          "Post Time": "",
+          "Notes / Error Log": ""
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "Date": "2026-07-12",
+          "Platform": "Instagram",
+          "Caption": "Behind the scenes at our roastery 🔥",
+          "Image Link (Drive)": "https://drive.google.com/file/d/EXAMPLE4/view",
+          "Status": "Posted",
+          "Post Time": "12:03 PM",
+          "Notes / Error Log": ""
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "Date": "2026-07-12",
+          "Platform": "X",
+          "Caption": "Behind the scenes at our roastery 🔥",
+          "Image Link (Drive)": "https://drive.google.com/file/d/EXAMPLE5/view",
+          "Status": "Failed",
+          "Post Time": "",
+          "Notes / Error Log": "Instagram Graph API token expired - needs refresh"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Splitting based on Platform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Splitting based on Platform": {
+      "main": [
+        [
+          {
+            "node": "Publish",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Tweet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "50c2ce77-1531-4a64-9379-94a152ad53bf",
+  "meta": {
+    "instanceId": "4d9b1e55e53667972c0aa502abb3257202189800f71cf008ae05ddd497c331b1"
+  },
+  "nodeGroups": [],
+  "id": "3Qje3yKS3aWSoDAZ",
+  "tags": []
+}

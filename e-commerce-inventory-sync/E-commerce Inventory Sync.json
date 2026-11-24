@@ -1,0 +1,595 @@
+{
+  "name": "E-commerce Inventory Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "de55c816-87fb-42c9-a1aa-d02ecfc45461",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        0
+      ],
+      "id": "a264b540-91d8-4bb5-a79e-3e20f2dd738a",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==Here is the latest inventory data for this sync cycle, pulled from all three sources.\n\nSHOPIFY (Admin API - inventory_levels):\n{{ JSON.stringify($('Shopify HTTP Node').all().map(i => i.json)) }}\n\nAMAZON (SP-API - catalog/inventory):\n{{ JSON.stringify($('Amazon HTTP Node').all().map(i => i.json)) }}\n\nPHYSICAL COUNTER (Google Sheet, manually updated by staff):\n{{ JSON.stringify($('Get row(s) in sheet').all().map(i => i.json)) }}\n\nCompare these three sources per product/SKU. Update the connected Google Sheets tool with the correct current quantity and status for each product, and flag anything that looks like a race condition — a sale reflected on one platform but not yet on another.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "I run a small home decor brand (UrbanCraft Home) — candles, diffusers, that kind of stuff. We sell on our Shopify store, Amazon, and also have a small physical counter at a local market where my sister manages sales manually in a register.\n\nProblem: during our Diwali sale last year we oversold two of our bestsellers — someone bought online right after we'd already sold the last piece offline, and we had to refund + apologize. Been manually checking stock across all three every morning since, it's a mess.\n\nYou will be given the purchase details every 5mins so that you can make a google sheet out of the data which I can see and know about the status of the products.\n I will attach a google sheets tool too, in which you can see the quantities of products remaining along with other basic details of the product and I want you update that data based on the orders placed.\nAfter comparing sources once, call the update tool immediately — do not re-read the sheet more than once per cycle.\n\nIn output I don't want any text, not a single word, the only acceptable output is the name of the platform on which the order was placed,\n\"platform\" : \"amazon\" | \"shopify\"",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        704,
+        -32
+      ],
+      "id": "c1c6751a-9f6d-47a9-8e69-255c620e98f0",
+      "name": "AI Agent",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 1000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        176
+      ],
+      "id": "439d6dc7-5dc5-4ddb-8497-dc2d7a46c05f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tLbgRuzCmUlFV1Sg",
+          "name": "CometAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ",
+          "mode": "list",
+          "cachedResultName": "E-commerce Inventory Sync",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1312231367,
+          "mode": "list",
+          "cachedResultName": "Counter Register",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ/edit#gid=1312231367"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        208
+      ],
+      "id": "e618296d-d457-494f-bb01-951e785febb6",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mBp3OodF5jMcrNpo",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "The google sheets tool for fetching the purchase and quantity list.",
+        "documentId": {
+          "__rl": true,
+          "value": "1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ",
+          "mode": "list",
+          "cachedResultName": "E-commerce Inventory Sync",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1312231367,
+          "mode": "list",
+          "cachedResultName": "Counter Register",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ/edit#gid=1312231367"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        160
+      ],
+      "id": "6a956db3-243d-4eca-b9e3-b4cb921049c4",
+      "name": "Fetching Purchase Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mBp3OodF5jMcrNpo",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "This tool lets you update the google sheets data of the product/goods.",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ",
+          "mode": "list",
+          "cachedResultName": "E-commerce Inventory Sync",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1312231367,
+          "mode": "list",
+          "cachedResultName": "Counter Register",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ/edit#gid=1312231367"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "SKU": "={{ $fromAI('sku', 'the product SKU to update', 'string') }}",
+            "Stock On Hand": "={{ $fromAI('stock_on_hand', 'the corrected available quantity', 'number') }}",
+            "Sold Today": "={{ $fromAI('sold_today', 'units sold today across all channels', 'number') }}",
+            "Notes": "={{ $fromAI('notes', 'status or race-condition flag for this product', 'string') }}",
+            "Last Counted By": "AI"
+          },
+          "matchingColumns": [
+            "SKU"
+          ],
+          "schema": [
+            {
+              "id": "Product Name",
+              "displayName": "Product Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SKU",
+              "displayName": "SKU",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Stock On Hand",
+              "displayName": "Stock On Hand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sold Today",
+              "displayName": "Sold Today",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Counted By",
+              "displayName": "Last Counted By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        816,
+        224
+      ],
+      "id": "e805dd84-de54-4b6c-aaa8-dc75f5881369",
+      "name": "Updating Purchasing Data",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mBp3OodF5jMcrNpo",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://sellingpartnerapi-na.amazon.com/catalog/2022-04-01/items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        240,
+        -160
+      ],
+      "id": "ae0dc979-7923-42ee-8728-bfd3149e5206",
+      "name": "Amazon HTTP Node"
+    },
+    {
+      "parameters": {
+        "url": "/admin/api/2024-01/inventory_levels.json?location_ids=68221100",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        240,
+        0
+      ],
+      "id": "84b98214-5eb6-4b64-88ff-b20ad32ed2d0",
+      "name": "Shopify HTTP Node"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4f7a0897-f360-43c9-b7df-6a2c229123c4",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "shopify",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1056,
+        -32
+      ],
+      "id": "7a94894c-4508-4e82-aa68-8e04dd61e231",
+      "name": "Dividing, based on platform(shopify/amazon)"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1312231367
+        },
+        "options": {}
+      },
+      "id": "015bdff1-0aaa-4c4b-9747-84c6c8d00fce",
+      "name": "Refresh Inventory (Shopify Branch)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1280,
+        -208
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mBp3OodF5jMcrNpo",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://urbancrafthome.myshopify.com/admin/api/2024-01/inventory_levels/set.json",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"location_id\": 68221100,\n  \"sku\": \"{{ $json.SKU }}\",\n  \"available\": {{ $json['Stock On Hand'] }}\n}",
+        "options": {}
+      },
+      "id": "ba88fbd6-5feb-44a0-a95d-5b0c01e6ea67",
+      "name": "Push Update to Shopify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1520,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1E95hDK1s5ewZch6KsN5pxU2v2QXvBrED-WpmhPmKctQ"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": 1312231367
+        },
+        "options": {}
+      },
+      "id": "c209f8c5-8496-4d8c-8236-f171cab2c0a3",
+      "name": "Refresh Inventory (Amazon Branch)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1280,
+        128
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mBp3OodF5jMcrNpo",
+          "name": "n8n.bigfoot01"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/A2EXAMPLESELLER/{{ $json.SKU }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"productType\": \"HOME\",\n  \"patches\": [\n    {\n      \"op\": \"replace\",\n      \"path\": \"/attributes/fulfillment_availability\",\n      \"value\": [\n        { \"fulfillment_channel_code\": \"DEFAULT\", \"quantity\": {{ $json['Stock On Hand'] }} }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "257f3c77-9e17-4e22-8abd-4af069b9031d",
+      "name": "Push Update to Amazon",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1520,
+        128
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Amazon HTTP Node",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Shopify HTTP Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Fetching Purchase Data": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Updating Purchasing Data": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amazon HTTP Node": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shopify HTTP Node": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Dividing, based on platform(shopify/amazon)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dividing, based on platform(shopify/amazon)": {
+      "main": [
+        [
+          {
+            "node": "Refresh Inventory (Shopify Branch)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refresh Inventory (Amazon Branch)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh Inventory (Shopify Branch)": {
+      "main": [
+        [
+          {
+            "node": "Push Update to Shopify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh Inventory (Amazon Branch)": {
+      "main": [
+        [
+          {
+            "node": "Push Update to Amazon",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "273e2e1a-7beb-4b38-b4ed-693d33cf3a21",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "4f8ad9799b19b614ef95ff228fb04f734ceae1b1007d41d1d8d2829380a2690a"
+  },
+  "nodeGroups": [],
+  "id": "ETihpdB6ZI9ptqRu",
+  "tags": []
+}
