@@ -68,7 +68,7 @@
     },
     {
       "parameters": {
-        "url": "https://newsdata.io/api/1/latest?    apikey=pub_4e5763b27f724180b97f7aef82fa19a7   &language=en   &category=technology,sports,science,politics,business   &timezone=asia/kolkata   &image=0   &video=0   &removeduplicate=1   &excludefield=source_id,source_priority,image_url,video_url,content",
+        "url": "https://newsdata.io/api/1/latest?    apikey="YOUR_NREWSDATA.IO_API_KEY"   &language=en   &category=technology,sports,science,politics,business   &timezone=asia/kolkata   &image=0   &video=0   &removeduplicate=1   &excludefield=source_id,source_priority,image_url,video_url,content",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
